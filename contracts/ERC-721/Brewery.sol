@@ -17,6 +17,11 @@ contract Brewery is ERC721, Ownable {
         uint256 lastTimeClaimed;               // The last time this brewery has had a claim
     }
 
+    /// @notice The base yield that each Brewery earns
+    uint256 public baseYield;
+
+    /// @notice The 
+
     /// @notice A mapping of unique hashed strings, to a flag that specifies if the brewery name already exists
     mapping (bytes32 => bool) nameExists;
 
@@ -33,9 +38,8 @@ contract Brewery is ERC721, Ownable {
     /**
      * @notice Mints a new tokenID, checking if the string name already exists
      */
-    function mint(address _to, uint256 _tokenId, string memory _name) onlyOwner {
+    function mint(address _to, uint256 _tokenId, string memory _name) external onlyOwner {
         bytes32 strHash = keccak256(bytes(_name));
-        require(!_nameExists[strHash], "Name exists");
         _mint(_to, _tokenId);
         stats[_tokenId] = BreweryStats({
             name: _name, 
@@ -43,18 +47,17 @@ contract Brewery is ERC721, Ownable {
             productionRateMultiplier: 100, 
             fermentationPeriodMultiplier: 100
         });
-        _nameExists[strHash] = true;
     }
 
-    function giveXP(uint256 _tokenId, uint256 _xp) onlyOwner {
+    function giveXP(uint256 _tokenId, uint256 _xp) external onlyOwner {
         stats[_tokenId].xp += _xp;
     }
 
     /**
      * @notice Claims the rewards
      */
-    function claim(uint256 _tokenId) {
-        require(msg.sender == _owners[_tokenId], )
+    function claim(uint256 _tokenId) external {
+        // TODO
     }
 
     /**
