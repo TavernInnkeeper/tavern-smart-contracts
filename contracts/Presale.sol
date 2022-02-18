@@ -117,10 +117,10 @@ contract Presale is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Allows the owner to withdraw the USDC funds that are currently sat in this contract
+     * @notice Allows the owner to withdraw tokens that are currently sat/stuck in this contract
      */
-    function withdraw() external onlyOwner {
-        usdc.transfer(msg.sender, usdc.balanceOf(address(this)));
+    function withdraw(address _token) external onlyOwner {
+        IERC20(_token).transfer(msg.sender, IERC20(_token).balanceOf(address(this)));
     }
 
     /**
