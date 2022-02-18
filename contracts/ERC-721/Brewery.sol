@@ -22,14 +22,14 @@ contract Brewery is ERC721, Ownable {
 
     /// @notice The 
 
-    /// @notice A mapping of unique hashed strings, to a flag that specifies if the brewery name already exists
-    mapping (bytes32 => bool) nameExists;
-
     /// @notice A mapping of token ID to brewery stats
-    mapping (uint256 => BreweryStats) stats;
+    mapping (uint256 => BreweryStats) public stats;
 
     /// @notice A list of tiers (index) and XP values (value), tiers.length = max tier.
     uint256[] public tiers;
+
+    /// @notice A list of tiers (index) and yield bonuses (value), tiers.length = max tier
+    uint256[] public yields;
 
     constructor(string memory _name, string memory _symbol, uint256 _baseDailyYield, uint256 _baseFermentationPeriod) {
 
@@ -45,7 +45,9 @@ contract Brewery is ERC721, Ownable {
             name: _name, 
             xp: 0, 
             productionRateMultiplier: 100, 
-            fermentationPeriodMultiplier: 100
+            fermentationPeriodMultiplier: 100,
+            totalYield: 0,
+            lastTimeClaiemd: block.timestamp
         });
     }
 
@@ -71,6 +73,11 @@ contract Brewery is ERC721, Ownable {
             }
             return i + 1;
         }
+        return 0;
+    }
+
+    function getYield(uint256 _tier) public view returns(uint256) {
+        return yields[_tier - 1];
     }
 
     /**
@@ -83,16 +90,18 @@ contract Brewery is ERC721, Ownable {
     /**
      * @notice Adds a tier and it's associated with XP value
      */
-    function addTier(uint256 _xp) external onlyOwner {
+    function addTier(uint256 _xp, uint256 _yield) external onlyOwner {
          tiers.push(_xp);
+         yields.push(_yield);
     }
 
     /**
      * @notice Edits the XP value of a particular tier
      */
-    function editTier(uint256 _tier, uint256 _xp) external onlyOwner {
+    function editTier(uint256 _tier, uint256 _xp, uint256 _yield) external onlyOwner {
         require(tiers.length >= _tier, "Tier doesnt exist");
         tiers[_tier - 1] = _xp;
+        yields[_tier - 1] = _yield;
     }
 
     /**
@@ -101,5 +110,6 @@ contract Brewery is ERC721, Ownable {
      */
     function clearTiers() external onlyOwner {
         delete tiers;
+        delete yields;
     }
 }

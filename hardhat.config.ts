@@ -30,6 +30,16 @@ const config: HardhatUserConfig = {
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
+    avaxmainnet: {
+      url: 'https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/avalanche/mainnet',
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
+    avaxtestnet: {
+      url: 'https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/avalanche/testnet',
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    }
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,

@@ -62,7 +62,7 @@ contract Mead is IERC20, Ownable {
         liquidityPair = IJoeFactory(dexRouter.factory()).createPair(address(this), USDC);
 
         // Mint the initial supply to the deployer
-        _mint(msg.sender, _initialSupply);
+        _mint(msg.sender, _initialSupply * 1**DECIMALS);
     }
 
     /**
@@ -134,10 +134,6 @@ contract Mead is IERC20, Ownable {
      * @notice Mints token to the treasury address
      */
     function mint(uint256 _amount) public onlyOwner {
-        require(
-            msg.sender == tavernsKeep,
-            "Not treasury"
-        );
         _mint(msg.sender, _amount * 1**DECIMALS);
     }
 
@@ -145,11 +141,7 @@ contract Mead is IERC20, Ownable {
      * @notice Burns tokens from the treasury address
      */
     function burn(uint256 _amount) public onlyOwner {
-        require(
-            msg.sender == tavernsKeep,
-            "Not treasury"
-        );
-        _burn(msg.sender, _amount * 1e18);
+        _burn(msg.sender, _amount * 1**DECIMALS);
     }
 
     /**
