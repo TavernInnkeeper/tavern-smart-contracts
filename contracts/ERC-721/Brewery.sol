@@ -20,17 +20,41 @@ contract Brewery is ERC721, Ownable {
     /// @notice Address of USDC
     address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
 
+    /// @notice Used to give extra precision for percentages
+    uint256 public constant PERCENTAGE_PRECISION = 1e4;
+
     /// @notice The contract address of the MEAD token
     IERC20 public meadToken;
 
     /// @notice The wallet address of the governing treasury
     address public tavernsKeep;
 
+    /// @notice The wallet address of the rewards pool
+    address public rewardsPool;
+
     /// @notice The address of the dex router
     IJoeRouter02 public dexRouter;
 
     /// @notice The address of the pair for MEAD/USDC
     IJoePair public liquidityPair;
+
+    /// @notice The upper liquidity ratio (when to apply the higher discount)
+    uint256 public liquidityRatio0 = 20 * PERCENTAGE_PRECISION;
+
+    /// @notice The lower liquidity ratio (when to apply the lower discount)
+    uint256 public liquidityRatio1 = 1 * PERCENTAGE_PRECISION;
+
+    /// @notice The discount (to be applied when the liquidity ratio is equal to or above `liquidityRatio0`)
+    uint256 public lpDiscount0 = 1 * PERCENTAGE_PRECISION;
+
+    /// @notice The discount (to be applied when the liquidity ratio is equal to or less than `liquidityRatio1`)
+    uint256 public lpDiscount1 = 25 * PERCENTAGE_PRECISION;
+
+    /// @notice The fee that is given to treasuries
+    uint256 public treasuryFee = 70 * PERCENTAGE_PRECISION;
+
+    /// @notice The fee that is given to rewards pool
+    uint256 public rewardPoolFee = 30 * PERCENTAGE_PRECISION;
 
     struct BreweryStats {
         string name;                           // A unique string
@@ -40,6 +64,12 @@ contract Brewery is ERC721, Ownable {
         uint256 totalYield;                    // The total yield this brewery has produced
         uint256 lastTimeClaimed;               // The last time this brewery has had a claim
     }
+
+    /// @notice The cost of a BREWERY in MEAD tokens
+    uint256 public breweryCost;
+
+    /// @notice Whether or not the USDC payments have been enabled (based on the treasury)
+    bool public isUSDCEnabled;
 
     /// @notice The base yield that each Brewery earns
     uint256 public baseYield;
@@ -54,18 +84,6 @@ contract Brewery is ERC721, Ownable {
 
     /// @notice A list of tiers (index) and yield bonuses (value), tiers.length = max tier
     uint256[] public yields;
-
-    /// @notice The upper liquidity ratio (when to apply the higher discount)
-    uint256 public liquidityRatio0 = 20;   // Liquidity ratio of 25%
-
-    /// @notice The lower liquidity ratio (when to apply the lower discount)
-    uint256 public liquidityRatio1 = 1;    // Liquidity ratio of 1%
-
-    /// @notice The discount (to be applied when the liquidity ratio is equal to or above `liquidityRatio0`)
-    uint256 public lpDiscount0 = 1;    // Discount of 1% for 25% or above
-
-    /// @notice The discount (to be applied when the liquidity ratio is equal to or less than `liquidityRatio1`)
-    uint256 public lpDiscount1 = 25;   // Discount of 25% for 1% or less
 
     constructor(address _meadTokenAddress, address _routerAddress, address _tavernsKeep, uint256 _initialSupply, uint256 _baseDailyYield, uint256 _baseFermentationPeriod) ERC721(NAME, SYMBOL) {
         tavernsKeep = _tavernsKeep;
@@ -164,10 +182,50 @@ contract Brewery is ERC721, Ownable {
         delete yields;
     }
 
-    function buyNodeWithLP() external returns (uint256) {
-        uint256 breweryPriceInUSDC = 100 * getUSDCForMead();
+    /**
+     * @notice Purchases a node
+     */
+    function _buyBrewery() internal {
+        // TODO: Logic
+    }
+
+    /**
+     * @notice Purchases a BREWERY using MEAD
+     */
+    function buyBrewery() external {
+        uint256 meadAmount = breweryCost * getUSDCForMead();
+        IERC20(USDC).transfer(tavernsKeep, meadAmount * treasuryFee / (100 * PERCENTAGE_PRECISION));
+        IERC20(USDC).transfer(rewardsPool, meadAmount * rewardPoolFee / (100 * PERCENTAGE_PRECISION));
+    }
+
+    /**
+     * @notice Purchases a BREWERY using USDC
+     */
+    function buyBreweryWithUSDC() external {
+
+        // Handle the minting logic for a new BREWERY
+        _buyBrewery();
+
+        // Take payment for USDC tokens
+        require(isUSDCEnabled, "USDC discount off");
+        uint256 usdcAmount = breweryCost * getUSDCForMead();
+        IERC20(USDC).transfer(tavernsKeep, usdcAmount);
+    }
+    
+    /**
+     * @notice Purchases a BREWERY using LP tokens
+     */
+    function buyBreweryWithLP() external {
+
+        // Buy node
+        _buyBrewery();
+
+        // Take payment in MEAD-USDC LP tokens
+        uint256 discount = calculateLPDiscount();
+        require(discount <= lpDiscount0, "LP discount off");
+        uint256 breweryPriceInUSDC = breweryCost * getUSDCForMead();
         uint256 breweryPriceInLP = getLPFromUSDC(breweryPriceInUSDC);
-        liquidityPair.transfer(tavernsKeep, breweryPriceInLP * calculateLPDiscount());
+        liquidityPair.transfer(tavernsKeep, breweryPriceInLP * (discount / (100 * PERCENTAGE_PRECISION)));
     }
 
     /**
