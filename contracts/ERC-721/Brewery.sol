@@ -7,6 +7,8 @@ import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeRouter02.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoePair.sol";
 
+import "./Renovation.sol";
+
 /**
  * @notice Brewerys are a custom ERC721 (NFT) that can gain experience and level up. They can also be upgraded.
  */
@@ -158,6 +160,23 @@ contract Brewery is ERC721, Ownable {
 
         // Reset the claim timer so that individuals have to wait past the fermentation period again
         breweryStats[_tokenId].lastTimeClaimed = block.timestamp;
+    }
+
+    /**
+     * @notice Renovations
+     */
+    function upgrade(uint256 _tokenId, uint256 _renovationId) external {
+        Renovation reno = Renovation(renovationAddress);
+
+        // If renovation is type 0 (Productio)
+        if (reno.getType() == 0) {
+            breweryStats[_tokenId].productionRateMultiplier = reno.getIntValue(_renovationId);
+        } else if (reno.getType() == 1) {
+            // Type Fermentation Period
+            breweryStats[_tokenId].fermentationPeriodMultiplier = reno.getIntValue(_renovationId);
+        }
+
+        reno.consume();
     }
 
     /**
