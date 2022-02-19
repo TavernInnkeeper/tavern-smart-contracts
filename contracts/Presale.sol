@@ -141,8 +141,8 @@ contract Presale is Ownable, ReentrancyGuard {
 
         deposited[msg.sender] -= amount;
 
-        // Divide by 18 to get the decimal value of deposited tokens
-        uint256 tokens = (amount / 18) * tokenRate;
+        // Divide by 6 to get the decimal value of deposited tokens
+        uint256 tokens = (amount / 6) * tokenRate;
         mead.transferFrom(address(this), msg.sender, tokens);
     }
 }
