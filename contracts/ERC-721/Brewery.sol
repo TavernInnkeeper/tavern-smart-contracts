@@ -7,6 +7,8 @@ import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeRouter02.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoePair.sol";
 
+import "./Renovation.sol";
+
 /**
  * @notice Brewerys are a custom ERC721 (NFT) that can gain experience and level up. They can also be upgraded.
  */
@@ -21,7 +23,7 @@ contract Brewery is ERC721, Ownable {
     address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
 
     /// @notice Used to give extra precision for percentages
-    uint256 public constant PERCENTAGE_PRECISION = 1e4;
+    uint256 public constant PRECISION = 1e10;
 
     /// @notice The contract address of the MEAD token
     IERC20 public meadToken;
@@ -39,28 +41,29 @@ contract Brewery is ERC721, Ownable {
     IJoePair public liquidityPair;
 
     /// @notice The upper liquidity ratio (when to apply the higher discount)
-    uint256 public liquidityRatio0 = 20 * PERCENTAGE_PRECISION;
+    uint256 public liquidityRatio0 = 20 * PRECISION;
 
     /// @notice The lower liquidity ratio (when to apply the lower discount)
-    uint256 public liquidityRatio1 = 1 * PERCENTAGE_PRECISION;
+    uint256 public liquidityRatio1 = 1 * PRECISION;
 
     /// @notice The discount (to be applied when the liquidity ratio is equal to or above `liquidityRatio0`)
-    uint256 public lpDiscount0 = 1 * PERCENTAGE_PRECISION;
+    uint256 public lpDiscount0 = 1 * PRECISION;
 
     /// @notice The discount (to be applied when the liquidity ratio is equal to or less than `liquidityRatio1`)
-    uint256 public lpDiscount1 = 25 * PERCENTAGE_PRECISION;
+    uint256 public lpDiscount1 = 25 * PRECISION;
 
     /// @notice The fee that is given to treasuries
-    uint256 public treasuryFee = 70 * PERCENTAGE_PRECISION;
+    uint256 public treasuryFee = 70 * PRECISION;
 
     /// @notice The fee that is given to rewards pool
-    uint256 public rewardPoolFee = 30 * PERCENTAGE_PRECISION;
+    uint256 public rewardPoolFee = 30 * PRECISION;
 
     struct BreweryStats {
         string name;                           // A unique string
         uint256 xp;                            // A XP value, increased on each claim
-        uint256 productionRateMultiplier;      // The amount to increase yield by
-        uint256 fermentationPeriodMultiplier;  // The amount to decrease the fermentation period by
+        uint256 productionRateMultiplier;      // The percentage increase to base yield
+        uint256 fermentationPeriodMultiplier;  // The percentage decrease to the fermentation period
+        uint256 experienceMultiplier;          // The percentage increase to experience gain
         uint256 totalYield;                    // The total yield this brewery has produced
         uint256 lastTimeClaimed;               // The last time this brewery has had a claim
     }
@@ -71,13 +74,17 @@ contract Brewery is ERC721, Ownable {
     /// @notice Whether or not the USDC payments have been enabled (based on the treasury)
     bool public isUSDCEnabled;
 
-    /// @notice The base yield that each Brewery earns
-    uint256 public baseYield;
+    /// @notice The base amount of daily MEAD that each Brewery earns
+    uint256 public baseProductionRate;
 
-    /// @notice The 
+    /// @notice The base fermentation period in seconds
+    uint256 public baseFermentationPeriod;
+
+    /// @notice The base experience amount awarded for each second past the fermentation period
+    uint256 public baseExperiencePerSecond;
 
     /// @notice A mapping of token ID to brewery stats
-    mapping (uint256 => BreweryStats) public stats;
+    mapping (uint256 => BreweryStats) public breweryStats;
 
     /// @notice A list of tiers (index) and XP values (value), tiers.length = max tier.
     uint256[] public tiers;
@@ -98,34 +105,85 @@ contract Brewery is ERC721, Ownable {
      * @notice Mints a new tokenID, checking if the string name already exists
      */
     function mint(address _to, uint256 _tokenId, string memory _name) external onlyOwner {
-        bytes32 strHash = keccak256(bytes(_name));
         _mint(_to, _tokenId);
-        stats[_tokenId] = BreweryStats({
+        breweryStats[_tokenId] = BreweryStats({
             name: _name, 
             xp: 0, 
-            productionRateMultiplier: 100, 
-            fermentationPeriodMultiplier: 100,
+            productionRateMultiplier: 100 * PRECISION, 
+            fermentationPeriodMultiplier: 100 * PRECISION,
+            experienceMultiplier: 100 * PRECISION,
             totalYield: 0,
             lastTimeClaimed: block.timestamp
         });
     }
 
     function giveXP(uint256 _tokenId, uint256 _xp) external onlyOwner {
-        stats[_tokenId].xp += _xp;
+        breweryStats[_tokenId].xp += _xp;
     }
 
     /**
-     * @notice Claims the rewards
+     * @notice Levels up a BREWERY 
+     */
+    function levelUp(uint256 _tokenId) external { 
+
+    }
+
+    /**
+     * @notice Claims all the rewards from every node that `msg.sender` owns
+     */
+    function claimAll() external {
+
+    }
+
+    /**
+     * @notice Claims the rewards from a specific node
      */
     function claim(uint256 _tokenId) external {
-        // TODO
+        uint256 fermentationPeriod = getFermentationPeriod(_tokenId);
+        uint256 fermentationTime = breweryStats[_tokenId].lastTimeClaimed + fermentationPeriod;
+
+        // Only award XP if we elapsed past the fermentation period
+        if (fermentationTime >= block.timestamp) {
+            uint256 timeSinceFermentation = block.timestamp - fermentationTime;
+            breweryStats[_tokenId].xp += timeSinceFermentation * getExperiencePerSecond(_tokenId);
+
+            // Check and compute a level up (i.e. increasing the brewerys yield)
+            uint256 tier = getTier(_tokenId);
+            if (tier < tiers.length) {
+                if (breweryStats[_tokenId].xp >= tiers[tier]) {
+                    breweryStats[_tokenId].productionRateMultiplier = yields[tier];
+                }
+            }
+        }
+
+        // Award MEAD tokens
+
+        // Reset the claim timer so that individuals have to wait past the fermentation period again
+        breweryStats[_tokenId].lastTimeClaimed = block.timestamp;
+    }
+
+    /**
+     * @notice Renovations
+     */
+    function upgrade(uint256 _tokenId, uint256 _renovationId) external {
+        Renovation reno = Renovation(renovationAddress);
+
+        // If renovation is type 0 (Productio)
+        if (reno.getType() == 0) {
+            breweryStats[_tokenId].productionRateMultiplier = reno.getIntValue(_renovationId);
+        } else if (reno.getType() == 1) {
+            // Type Fermentation Period
+            breweryStats[_tokenId].fermentationPeriodMultiplier = reno.getIntValue(_renovationId);
+        }
+
+        reno.consume();
     }
 
     /**
      * @notice Calculates the tier of a particular token ID
      */
     function getTier(uint256 _tokenId) public view returns(uint256) {
-        uint256 xp = stats[_tokenId].xp;  // Tier 1: 0 - 99         Tier 2:  100 - 249           Tier 3:     250+
+        uint256 xp = breweryStats[_tokenId].xp;  // Tier 1: 0 - 99         Tier 2:  100 - 249           Tier 3:     250+
         for(uint i = 0; i < tiers.length; ++i) {
             if (xp > tiers[i]) {
                 continue;
@@ -154,6 +212,18 @@ contract Brewery is ERC721, Ownable {
      */
     function getMaxTiers() external view returns(uint256) {
         return tiers.length;
+    }
+
+    function getProductionRate(uint256 _tokenId) public view returns(uint256) {
+        return baseProductionRate * breweryStats[_tokenId].productionRateMultiplier / PRECISION;
+    }
+
+    function getFermentationPeriod(uint256 _tokenId) public view returns(uint256) {
+        return baseFermentationPeriod * breweryStats[_tokenId].fermentationPeriodMultiplier / PRECISION;
+    }
+
+    function getExperiencePerSecond(uint256 _tokenId) public view returns(uint256) {
+        return baseExperiencePerSecond * breweryStats[_tokenId].experienceMultiplier / PRECISION;
     }
 
     /**
@@ -194,8 +264,8 @@ contract Brewery is ERC721, Ownable {
      */
     function buyBrewery() external {
         uint256 meadAmount = breweryCost * getUSDCForMead();
-        IERC20(USDC).transfer(tavernsKeep, meadAmount * treasuryFee / (100 * PERCENTAGE_PRECISION));
-        IERC20(USDC).transfer(rewardsPool, meadAmount * rewardPoolFee / (100 * PERCENTAGE_PRECISION));
+        IERC20(USDC).transfer(tavernsKeep, meadAmount * treasuryFee / (100 * PRECISION));
+        IERC20(USDC).transfer(rewardsPool, meadAmount * rewardPoolFee / (100 * PRECISION));
     }
 
     /**
@@ -225,7 +295,7 @@ contract Brewery is ERC721, Ownable {
         require(discount <= lpDiscount0, "LP discount off");
         uint256 breweryPriceInUSDC = breweryCost * getUSDCForMead();
         uint256 breweryPriceInLP = getLPFromUSDC(breweryPriceInUSDC);
-        liquidityPair.transfer(tavernsKeep, breweryPriceInLP * (discount / (100 * PERCENTAGE_PRECISION)));
+        liquidityPair.transfer(tavernsKeep, breweryPriceInLP * (discount / (100 * PRECISION)));
     }
 
     /**
@@ -269,7 +339,7 @@ contract Brewery is ERC721, Ownable {
         address[] memory path = new address[](2);
         path[0] = address(meadToken);
         path[1] = USDC;
-        uint256[] memory amountsOut = dexRouter.getAmountsIn(1e18, path);
+        uint256[] memory amountsOut = dexRouter.getAmountsIn(1e6, path);
         return amountsOut[0];
     }
 
