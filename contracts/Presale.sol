@@ -1,19 +1,20 @@
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract Presale is Ownable, ReentrancyGuard {
+contract Presale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice Address of USDC
     address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
 
     /// @notice The mead contract
-    IERC20 public mead;
+    IERC20Upgradeable public mead;
 
     /// @notice The funding token
-    IERC20 public usdc;
+    IERC20Upgradeable public usdc;
 
     /// @notice A running tally of how much USDC was raised
     uint256 public total;
@@ -57,7 +58,7 @@ contract Presale is Ownable, ReentrancyGuard {
     /// @notice The amount of USDC to vest after each period
     uint256 public vestingAmount;
 
-    constructor(IERC20 _mead, IERC20 _usdc) {
+    function initialize(IERC20Upgradeable _mead, IERC20Upgradeable _usdc) external initializer {
         mead = _mead;
         usdc = _usdc;
     }
@@ -111,7 +112,7 @@ contract Presale is Ownable, ReentrancyGuard {
         deposited[msg.sender] += amount;
         total += amount;
 
-        usdc.transfer(address(this), amount);
+        usdc.transferFrom(msg.sender, address(this), amount);
 
         //emit Deposit(account, amount);
     }
@@ -120,7 +121,7 @@ contract Presale is Ownable, ReentrancyGuard {
      * @notice Allows the owner to withdraw tokens that are currently sat/stuck in this contract
      */
     function withdraw(address _token) external onlyOwner {
-        IERC20(_token).transfer(msg.sender, IERC20(_token).balanceOf(address(this)));
+        IERC20Upgradeable(_token).transfer(msg.sender, IERC20Upgradeable(_token).balanceOf(address(this)));
     }
 
     /**
