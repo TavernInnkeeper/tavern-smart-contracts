@@ -9,7 +9,7 @@ import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
 /**
  * @notice The inert receipt token for the presale, this gives The Tavern protocol flexibility and control over how this is handled
  */
-contract xMead is Ownable, AccessControl {
+contract XMead is Ownable, AccessControl {
     
     /// @notice Token Info
     string private constant NAME     = "xMead";
