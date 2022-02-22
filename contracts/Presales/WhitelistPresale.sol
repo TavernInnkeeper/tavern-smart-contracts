@@ -1,13 +1,14 @@
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import "../ERC-20/xMead.sol";
 
-contract Presale is Ownable, ReentrancyGuard {
+contract Presale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice Address of USDC
     address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
@@ -16,7 +17,7 @@ contract Presale is Ownable, ReentrancyGuard {
     XMead public xmead;
 
     /// @notice The funding token
-    ERC20 public usdc;
+    ERC20Upgradeable public usdc;
 
     /// @notice How much USDC did each person deposit
     mapping(address => uint256) deposited;
@@ -60,9 +61,9 @@ contract Presale is Ownable, ReentrancyGuard {
     event PresaleStarted(bool enabled, uint256 time);
     event Deposit(address investor, uint256 amount);
 
-    constructor(address _xmead) {
+    function initialize(address _xmead) external initializer {
         xmead = XMead(_xmead);
-        usdc = ERC20(USDC);
+        usdc = ERC20Upgradeable(USDC);
 
         maxContributions.push(1000); // $1,000 max contribution 0-60 mins
         maxContributions.push(2000); // $2,000 max contribution 60+ mins
