@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 
 import "../ERC-20/xMead.sol";
 
-contract Presale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract PublicPresale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice Address of USDC
     address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
