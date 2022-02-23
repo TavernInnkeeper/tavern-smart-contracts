@@ -1,7 +1,7 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeRouter02.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
@@ -12,7 +12,7 @@ import "./Renovation.sol";
 /**
  * @notice Brewerys are a custom ERC721 (NFT) that can gain experience and level up. They can also be upgraded.
  */
-contract Brewery is ERC721, Ownable {
+contract Brewery is ERC721Enumerable, Ownable {
     /// @notice A descriptive name for a collection of NFTs in this contract
     string private constant NAME = "Brewery";
 
@@ -33,6 +33,9 @@ contract Brewery is ERC721, Ownable {
 
     /// @notice The wallet address of the rewards pool
     address public rewardsPool;
+
+    /// @notice The wallet address of the rewards pool
+    address public renovationAddress;
 
     /// @notice The address of the dex router
     IJoeRouter02 public dexRouter;
@@ -92,8 +95,9 @@ contract Brewery is ERC721, Ownable {
     /// @notice A list of tiers (index) and yield bonuses (value), tiers.length = max tier
     uint256[] public yields;
 
-    constructor(address _meadTokenAddress, address _routerAddress, address _tavernsKeep, uint256 _initialSupply, uint256 _baseDailyYield, uint256 _baseFermentationPeriod) ERC721(NAME, SYMBOL) {
+    constructor(address _meadTokenAddress, address _routerAddress, address _tavernsKeep, address _renovationAddress, uint256 _initialSupply, uint256 _baseDailyYield, uint256 _baseFermentationPeriod) ERC721(NAME, SYMBOL) {
         tavernsKeep = _tavernsKeep;
+        renovationAddress = _renovationAddress;
         meadToken = IERC20(_meadTokenAddress);
 
         // Set up the router and the liquidity pair
@@ -169,14 +173,14 @@ contract Brewery is ERC721, Ownable {
         Renovation reno = Renovation(renovationAddress);
 
         // If renovation is type 0 (Productio)
-        if (reno.getType() == 0) {
+        if (reno.getType(_renovationId) == 0) {
             breweryStats[_tokenId].productionRateMultiplier = reno.getIntValue(_renovationId);
-        } else if (reno.getType() == 1) {
+        } else if (reno.getType(_renovationId) == 1) {
             // Type Fermentation Period
             breweryStats[_tokenId].fermentationPeriodMultiplier = reno.getIntValue(_renovationId);
         }
 
-        reno.consume();
+        reno.consume(_renovationId);
     }
 
     /**
