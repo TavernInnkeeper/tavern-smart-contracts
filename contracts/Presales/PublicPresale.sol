@@ -56,26 +56,30 @@ contract PublicPresale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgr
     event Deposit(address investor, uint256 amount);
 
     function initialize(address _xmead) external initializer {
+        __Context_init();
+        __Ownable_init();
+
         xmead = XMead(_xmead);
         usdc = ERC20Upgradeable(USDC);
-
-        maxContributions.push(2000);  // $2,000 max contribution 0-15 mins
-        maxContributions.push(4000);  // $4,000 max contribution 15-30 mins
-        maxContributions.push(6000);  // $6,000 max contribution 30-45 mins
-        maxContributions.push(8000);  // $8,000 max contribution 45-60 mins
-        maxContributions.push(10000); // $10,000 max contribution 60+ mins
     }
 
     function configure(
         uint256 _raiseAim, 
         uint256 _tokenRate, 
         uint256 _min,
+        uint256 _max,
+        uint256 _intervals,
         uint256 _timeInterval
     ) external onlyOwner {
         raiseAim = _raiseAim;
         tokenRate = _tokenRate;
         min = _min;
         timeInterval = _timeInterval;
+
+        // Set up the maximum contributions
+        for (uint i = 0; i < _intervals; ++i) {
+            maxContributions.push(_max * (i + 1));
+        }
     }
     
     /**

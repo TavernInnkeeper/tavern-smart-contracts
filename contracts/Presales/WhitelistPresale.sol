@@ -82,7 +82,7 @@ contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         min = _min;
         timeInterval = _timeInterval;
 
-        // 
+        // Set up the maximum contributions
         for (uint i = 0; i < _intervals; ++i) {
             maxContributions.push(_max * (i + 1));
         }
