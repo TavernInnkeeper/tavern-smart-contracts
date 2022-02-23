@@ -1,12 +1,15 @@
-import * as dotenv from "dotenv";
-
-import "@nomiclabs/hardhat-etherscan";
-import "@nomiclabs/hardhat-waffle";
-import "@typechain/hardhat";
-import "hardhat-gas-reporter";
-import "solidity-coverage";
 import { HardhatUserConfig, task } from "hardhat/config";
 
+import "@openzeppelin/hardhat-upgrades";
+import "@nomiclabs/hardhat-etherscan";
+import "@nomiclabs/hardhat-waffle";
+import "hardhat-gas-reporter";
+import "hardhat-typechain";
+import "hardhat-deploy";
+import "hardhat-contract-sizer";
+import "solidity-coverage";
+
+import * as dotenv from "dotenv";
 dotenv.config();
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -42,12 +45,20 @@ const config: HardhatUserConfig = {
     }
   },
   gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
+    enabled: !!process.env.REPORT_GAS !== undefined,
     currency: "USD",
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
+  mocha: {
+    timeout: "1000000s"
+  },
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: true,
+    disambiguatePaths: false,
+  }
 };
 
 export default config;
