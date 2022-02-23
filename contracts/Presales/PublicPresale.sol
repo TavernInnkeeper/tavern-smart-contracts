@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 
 import "../ERC-20/xMead.sol";
 
-contract Presale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract PublicPresale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice Address of USDC
     address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
@@ -56,26 +56,30 @@ contract Presale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     event Deposit(address investor, uint256 amount);
 
     function initialize(address _xmead) external initializer {
+        __Context_init();
+        __Ownable_init();
+
         xmead = XMead(_xmead);
         usdc = ERC20Upgradeable(USDC);
-
-        maxContributions.push(2000);  // $2,000 max contribution 0-15 mins
-        maxContributions.push(4000);  // $4,000 max contribution 15-30 mins
-        maxContributions.push(6000);  // $6,000 max contribution 30-45 mins
-        maxContributions.push(8000);  // $8,000 max contribution 45-60 mins
-        maxContributions.push(10000); // $10,000 max contribution 60+ mins
     }
 
     function configure(
         uint256 _raiseAim, 
         uint256 _tokenRate, 
         uint256 _min,
+        uint256 _max,
+        uint256 _intervals,
         uint256 _timeInterval
     ) external onlyOwner {
         raiseAim = _raiseAim;
         tokenRate = _tokenRate;
         min = _min;
         timeInterval = _timeInterval;
+
+        // Set up the maximum contributions
+        for (uint i = 0; i < _intervals; ++i) {
+            maxContributions.push(_max * (i + 1));
+        }
     }
     
     /**

@@ -1,37 +1,54 @@
-import { HardhatUserConfig, task } from "hardhat/config";
-
-import "@openzeppelin/hardhat-upgrades";
-import "@nomiclabs/hardhat-etherscan";
+import { HardhatUserConfig } from "hardhat/types";
 import "@nomiclabs/hardhat-waffle";
-import "hardhat-gas-reporter";
-import "hardhat-typechain";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
+import "@openzeppelin/hardhat-upgrades";
 import "hardhat-deploy";
+import "@typechain/hardhat"
 import "hardhat-contract-sizer";
 import "solidity-coverage";
+import "hardhat-abi-exporter";
 
-import * as dotenv from "dotenv";
-dotenv.config();
+import { config as dotEnvConfig } from "dotenv";
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
+dotEnvConfig();
 
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
+const mnemonic = process.env.WORKER_SEED || "";
+const privateKey = process.env.PRIVATE_KEY || "";
+const privateKey2 = process.env.PRIVATE_KEY || "";
 
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
+const defaultConfig = {
+  accounts: { mnemonic },
+}
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.4",
+  solidity: {
+    version: "0.8.4",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 500,
+      },
+    },
+  },
+  defaultNetwork: "hardhat",
   networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    localhost: {
+      url: "http://127.0.0.1:8545",
+    },
+    hardhat: {
+      forking: {
+        url: 'https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/avalanche/mainnet',
+      },
+    },
+    bscmainnet: {
+      url: "https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/bsc/mainnet",
+      accounts: [privateKey, privateKey2]
+    },
+    bsctestnet: {
+      url: "https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/bsc/testnet",
+      accounts: [privateKey, privateKey2],
+      allowUnlimitedContractSize: true
     },
     avaxmainnet: {
       url: 'https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/avalanche/mainnet',
@@ -44,21 +61,28 @@ const config: HardhatUserConfig = {
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     }
   },
-  gasReporter: {
-    enabled: !!process.env.REPORT_GAS !== undefined,
-    currency: "USD",
+  abiExporter: {
+    path: './data/abi',
+    runOnCompile: true,
+    clear: true,
+    flat: false,
+    spacing: 2,
+    pretty: false,
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: true,
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
-  mocha: {
-    timeout: "1000000s"
+  typechain: {
+    outDir: './typechain',
+    target: 'ethers-v5',
+    alwaysGenerateOverloads: false, // should overloads with full signatures like deposit(uint256) be generated always, even if there are no overloads?
   },
-  contractSizer: {
-    alphaSort: true,
-    runOnCompile: true,
-    disambiguatePaths: false,
-  }
 };
 
 export default config;

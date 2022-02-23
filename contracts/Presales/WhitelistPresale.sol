@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 
 import "../ERC-20/xMead.sol";
 
-contract Presale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice Address of USDC
     address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
@@ -62,23 +62,30 @@ contract Presale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     event Deposit(address investor, uint256 amount);
 
     function initialize(address _xmead) external initializer {
+        __Context_init();
+        __Ownable_init();
+
         xmead = XMead(_xmead);
         usdc = ERC20Upgradeable(USDC);
-
-        maxContributions.push(1000); // $1,000 max contribution 0-60 mins
-        maxContributions.push(2000); // $2,000 max contribution 60+ mins
     }
 
     function configure(
         uint256 _raiseAim, 
         uint256 _tokenRate, 
         uint256 _min,
+        uint256 _max,
+        uint256 _intervals,
         uint256 _timeInterval
     ) external onlyOwner {
         raiseAim = _raiseAim;
         tokenRate = _tokenRate;
         min = _min;
         timeInterval = _timeInterval;
+
+        // Set up the maximum contributions
+        for (uint i = 0; i < _intervals; ++i) {
+            maxContributions.push(_max * (i + 1));
+        }
     }
 
     /**
@@ -130,9 +137,9 @@ contract Presale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(maxContributions.length > 0, "Max contributions not set");
         uint256 i = getInterval();
         if (i >= maxContributions.length) {
-            return maxContributions[maxContributions.length - 1] * 10**usdc.decimals();
+            return maxContributions[maxContributions.length - 1];
         } else {
-            return maxContributions[i] * 10**usdc.decimals();
+            return maxContributions[i];
         }
     }
 
