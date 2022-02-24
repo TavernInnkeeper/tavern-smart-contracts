@@ -142,9 +142,9 @@ contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(maxContributions.length > 0, "Max contributions not set");
         uint256 i = getInterval();
         if (i >= maxContributions.length) {
-            return maxContributions[maxContributions.length - 1];
+            return maxContributions[maxContributions.length - 1] * 10**usdc.decimals();
         } else {
-            return maxContributions[i];
+            return maxContributions[i] * 10**usdc.decimals();
         }
     }
 

@@ -88,6 +88,16 @@
       },
       {
         "internalType": "uint256",
+        "name": "_max",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_intervals",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
         "name": "_timeInterval",
         "type": "uint256"
       }
