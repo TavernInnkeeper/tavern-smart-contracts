@@ -22,9 +22,6 @@ contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice How much USDC did each person deposit
     mapping(address => uint256) deposited;
 
-    /// @notice A list of the cooldowns for individuals who are vesting tokens
-    mapping(address => uint256) cooldown;
-
     /// @notice The amount of unique addresses that participated
     uint256 public participants;
 
@@ -120,6 +117,14 @@ contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
+     * @notice Ends the presale
+     */
+    function end() external onlyOwner {
+        require(isRunning, "Sale isn't running");
+        isRunning = false;
+    }
+
+    /**
      * @notice Returns the interval that we are in based on the `interval` variable
      */
     function getInterval() public view returns (uint256) {
@@ -162,7 +167,7 @@ contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         totalDeposited += amount;
 
         // Issue is equal to the amount of USDC deposited * the amount of xMEAD for each 1 USDC
-        uint256 issueAmount = (amount * tokenRate * 10**xmead.decimals()) / (10**usdc.decimals());
+        uint256 issueAmount = amount * tokenRate / (10**usdc.decimals());
 
         // Take USDC
         usdc.transferFrom(msg.sender, address(this), amount);

@@ -22,9 +22,6 @@ contract PublicPresale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgr
     /// @notice How much USDC did each person deposit
     mapping(address => uint256) deposited;
 
-    /// @notice A list of the cooldowns for individuals who are vesting tokens
-    mapping(address => uint256) cooldown;
-
     /// @notice The amount of unique addresses that participated
     uint256 public participants;
 

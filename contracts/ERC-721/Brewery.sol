@@ -17,7 +17,7 @@ contract Brewery is ERC721Enumerable, Ownable {
     string private constant NAME = "Brewery";
 
     /// @notice An abbreviated name for NFTs in this contract
-    string private constant SYMBOL   = "BREWERY";
+    string private constant SYMBOL = "BREWERY";
 
     /// @notice Address of USDC
     address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
@@ -34,7 +34,7 @@ contract Brewery is ERC721Enumerable, Ownable {
     /// @notice The wallet address of the rewards pool
     address public rewardsPool;
 
-    /// @notice The wallet address of the rewards pool
+    /// @notice The address for the renovation
     address public renovationAddress;
 
     /// @notice The address of the dex router
@@ -60,6 +60,21 @@ contract Brewery is ERC721Enumerable, Ownable {
 
     /// @notice The fee that is given to rewards pool
     uint256 public rewardPoolFee = 30 * PRECISION;
+
+    struct BrewerStats {
+        address brewer;
+        uint256 reputation;
+        uint256 rewardsPerSecond;
+    }
+
+    /// @notice The reputation gained for purchasing a BREWERY with MEAD
+    uint256 public reputationPerBrewery;
+
+    /// @notice The reputation gained for purchasing a BREWERY with USDC
+    uint256 public reputationPerBreweryUSDC;
+
+    /// @notice The reputation gained for purchasing a BREWERY with LP
+    uint256 public reputationPerBreweryLP;
 
     struct BreweryStats {
         string name;                           // A unique string

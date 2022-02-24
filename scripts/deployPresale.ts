@@ -40,7 +40,7 @@ async function main() {
   const timeInterval = 10;
   await presale.connect(owner).configure(
     ethers.utils.parseUnits(raiseAim, usdcDecimals), 
-    tokenRate, 
+    ethers.utils.parseUnits(tokenRate, await xMead.decimals()), 
     ethers.utils.parseUnits(min, usdcDecimals),
     ethers.utils.parseUnits(max, usdcDecimals),
     intervals,
