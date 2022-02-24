@@ -38,25 +38,16 @@ const config: HardhatUserConfig = {
     },
     hardhat: {
       forking: {
-        url: 'https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/avalanche/mainnet',
+        url: process.env.AVAX_MAINNET,
       },
     },
-    bscmainnet: {
-      url: "https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/bsc/mainnet",
-      accounts: [privateKey, privateKey2]
-    },
-    bsctestnet: {
-      url: "https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/bsc/testnet",
-      accounts: [privateKey, privateKey2],
-      allowUnlimitedContractSize: true
-    },
     avaxmainnet: {
-      url: 'https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/avalanche/mainnet',
+      url: process.env.AVAX_MAINNET,
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
     avaxtestnet: {
-      url: 'https://speedy-nodes-nyc.moralis.io/50561c02c5a853febf23eb96/avalanche/testnet',
+      url: process.env.AVAX_TESTNET,
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     }
