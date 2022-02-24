@@ -1,42 +1,78 @@
-import * as dotenv from "dotenv";
-
-import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomiclabs/hardhat-etherscan";
+import { HardhatUserConfig } from "hardhat/types";
 import "@nomiclabs/hardhat-waffle";
-import "@typechain/hardhat";
-import "hardhat-gas-reporter";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
+import "@openzeppelin/hardhat-upgrades";
+import "hardhat-deploy";
+import "@typechain/hardhat"
+import "hardhat-contract-sizer";
 import "solidity-coverage";
+import "hardhat-abi-exporter";
 
-dotenv.config();
+import { config as dotEnvConfig } from "dotenv";
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
+dotEnvConfig();
 
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
+const mnemonic = process.env.WORKER_SEED || "";
+const privateKey = process.env.PRIVATE_KEY || "";
+const privateKey2 = process.env.PRIVATE_KEY || "";
 
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
+const defaultConfig = {
+  accounts: { mnemonic },
+}
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.4",
+  solidity: {
+    version: "0.8.4",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 500,
+      },
+    },
+  },
+  defaultNetwork: "hardhat",
   networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
+    localhost: {
+      url: "http://127.0.0.1:8545",
+    },
+    hardhat: {
+      forking: {
+        url: process.env.AVAX_MAINNET,
+      },
+    },
+    avaxmainnet: {
+      url: process.env.AVAX_MAINNET,
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
+    avaxtestnet: {
+      url: process.env.AVAX_TESTNET,
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    }
   },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
+  abiExporter: {
+    path: './data/abi',
+    runOnCompile: true,
+    clear: true,
+    flat: false,
+    spacing: 2,
+    pretty: false,
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: true,
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
+  },
+  typechain: {
+    outDir: './typechain',
+    target: 'ethers-v5',
+    alwaysGenerateOverloads: false, // should overloads with full signatures like deposit(uint256) be generated always, even if there are no overloads?
   },
 };
 
