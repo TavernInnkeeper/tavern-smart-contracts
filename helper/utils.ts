@@ -93,3 +93,7 @@ export async function impersonateForToken(tokenInfo: any, receiver: any, amount:
   await token.connect(signedHolder).transfer(receiver.address, ethers.utils.parseUnits(amount, tokenInfo.decimals));
   await stopImpersonatingAccount(tokenInfo.holder);
 }
+
+export function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}

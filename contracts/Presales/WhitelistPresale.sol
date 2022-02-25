@@ -10,9 +10,6 @@ import "../ERC-20/xMead.sol";
 
 contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
-    /// @notice Address of USDC
-    address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
-
     /// @notice The xmead contract
     XMead public xmead;
 
@@ -20,13 +17,13 @@ contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     ERC20Upgradeable public usdc;
 
     /// @notice How much USDC did each person deposit
-    mapping(address => uint256) deposited;
+    mapping(address => uint256) public deposited;
 
     /// @notice The amount of unique addresses that participated
     uint256 public participants;
 
     /// @notice A mapping of each address and whether it is whitelisted
-    mapping(address => bool) whitelist;
+    mapping(address => bool) public whitelist;
     
     /// @notice Maximum input array length used in `addToWhitelist`
     uint256 public constant MAX_ARRAY_LENGTH = 50;
@@ -58,12 +55,12 @@ contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     event PresaleStarted(bool enabled, uint256 time);
     event Deposit(address investor, uint256 amount);
 
-    function initialize(address _xmead) external initializer {
+    function initialize(address _xmead, address _usdc) external initializer {
         __Context_init();
         __Ownable_init();
 
         xmead = XMead(_xmead);
-        usdc = ERC20Upgradeable(USDC);
+        usdc = ERC20Upgradeable(_usdc);
     }
 
     function configure(
@@ -142,9 +139,9 @@ contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(maxContributions.length > 0, "Max contributions not set");
         uint256 i = getInterval();
         if (i >= maxContributions.length) {
-            return maxContributions[maxContributions.length - 1] * 10**usdc.decimals();
+            return maxContributions[maxContributions.length - 1];
         } else {
-            return maxContributions[i] * 10**usdc.decimals();
+            return maxContributions[i];
         }
     }
 

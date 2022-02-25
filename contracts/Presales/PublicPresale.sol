@@ -10,9 +10,6 @@ import "../ERC-20/xMead.sol";
 
 contract PublicPresale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
-    /// @notice Address of USDC
-    address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
-
     /// @notice The xmead contract
     XMead public xmead;
 
@@ -52,12 +49,12 @@ contract PublicPresale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgr
     event PresaleStarted(bool enabled, uint256 time);
     event Deposit(address investor, uint256 amount);
 
-    function initialize(address _xmead) external initializer {
+    function initialize(address _xmead, address _usdc) external initializer {
         __Context_init();
         __Ownable_init();
 
         xmead = XMead(_xmead);
-        usdc = ERC20Upgradeable(USDC);
+        usdc = ERC20Upgradeable(_usdc);
     }
 
     function configure(
@@ -106,9 +103,9 @@ contract PublicPresale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgr
         require(maxContributions.length > 0, "Max contributions not set");
         uint256 i = getInterval();
         if (i >= maxContributions.length) {
-            return maxContributions[maxContributions.length - 1] * 10**usdc.decimals();
+            return maxContributions[maxContributions.length - 1];
         } else {
-            return maxContributions[i] * 10**usdc.decimals();
+            return maxContributions[i];
         }
     }
 
@@ -130,7 +127,7 @@ contract PublicPresale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgr
         totalDeposited += amount;
 
         // Issue is equal to the amount of USDC deposited * the amount of xMEAD for each 1 USDC
-        uint256 issueAmount = (amount * tokenRate * 10**xmead.decimals()) / (10**usdc.decimals());
+        uint256 issueAmount = (amount * tokenRate) / (10**usdc.decimals());
 
         // Take USDC
         usdc.transferFrom(msg.sender, address(this), amount);

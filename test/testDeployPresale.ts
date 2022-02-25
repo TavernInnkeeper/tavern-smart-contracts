@@ -1,8 +1,8 @@
 import hre, { ethers } from "hardhat";
-import { deployContract, deployProxy } from "./deployer";
+import { deployContract, deployProxy } from "../helper/deployer";
 
 import ERC20 from '../abis/ERC20.json';
-import { sleep } from "./utils";
+import { sleep } from "../helper/utils";
 
 async function main() {
 
@@ -33,7 +33,7 @@ async function main() {
 
   // Configure and run presale
   const raiseAim = '10';
-  const tokenRate = 100;
+  const tokenRate = '100';
   const min = '1';
   const max = '2';
   const intervals = '2';
