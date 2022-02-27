@@ -71,6 +71,9 @@ contract WhitelistPresale is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _intervals,
         uint256 _timeInterval
     ) external onlyOwner {
+
+        delete maxContributions;
+
         raiseAim = _raiseAim;
         tokenRate = _tokenRate;
         min = _min;

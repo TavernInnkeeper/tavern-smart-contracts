@@ -2,6 +2,7 @@
 .openzeppelin
 node_modules
 .env
+accounts.json
 coverage
 coverage.json
 typechain

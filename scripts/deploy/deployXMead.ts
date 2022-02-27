@@ -1,8 +1,5 @@
 import hre, { ethers } from "hardhat";
-import { deployContract, deployProxy } from "../helper/deployer";
-
-import ERC20 from '../abis/ERC20.json';
-import { sleep } from "../helper/utils";
+import { deployContract } from "../../helper/deployer";
 
 async function main() {
 

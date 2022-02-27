@@ -16,7 +16,7 @@ async function main() {
     // Get Xmead contract
     const xMead = await ethers.getContractAt("XMead", XMEAD_MAINNET);
 
-    let tx = await presale.connect(deployer).end();
+    let tx = await presale.connect(deployer).withdraw(USDC.address);
     await tx.wait();
 }
 

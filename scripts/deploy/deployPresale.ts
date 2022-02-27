@@ -3,34 +3,30 @@ import { deployContract, deployProxy } from "../../helper/deployer";
 
 import ERC20 from '../../abis/ERC20.json';
 import { sleep } from "../../helper/utils";
+import { USDC_MAINNET, XMEAD_MAINNET, XMEAD_TESTNET } from "../ADDRESSES";
 
 async function main() {
   // The signers
   const [deployer, addr1, addr2, addr3, addr4] = await ethers.getSigners();
 
   // Get USDC Contract
-  const USDCProxyAddressMainnet = '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E';
-  const USDCProxyAddressTestnet = '0x5425890298aed601595a70AB815c96711a31Bc65';
-
-  // Get USDC Contract
-  const USDC = await ethers.getContractAt(ERC20, USDCProxyAddressTestnet);
+  const USDC = await ethers.getContractAt(ERC20, USDC_MAINNET);
   const usdcDecimals = await USDC.decimals();
 
   // Get Xmead contract
-  const xMeadAddress = "0x31eC5033605c1B368BF207e22E829f7E4335fbf5";
-  const xMead = await ethers.getContractAt("XMead", xMeadAddress);
+  const xMead = await ethers.getContractAt("XMead", XMEAD_MAINNET);
 
   // Deploy presale
-  const presale = await deployProxy("WhitelistPresale", xMead.address, USDCProxyAddressTestnet);
+  const presale = await deployProxy("WhitelistPresale", xMead.address, USDC_MAINNET);
   console.log("Whitelisted Presale", presale.address);
 
   // Configure and run presale
-  const raiseAim     = '80000';  // USDC
+  const raiseAim     = '360000';  // USDC
   const tokenRate    = '1.11';    // xMEAD (per $1 USDC)
   const min          = '100';     // USDC
-  const max          = '10000';    // USDC
+  const max          = '1000';    // USDC
   const intervals    = '2';       // 2 intervals (max, then max*2)
-  const timeInterval = 900;       // 15 minutes (In seconds)
+  const timeInterval = 3600;      // 1 hour (In seconds)
 
   await presale.connect(deployer).configure(
     ethers.utils.parseUnits(raiseAim, usdcDecimals), 
