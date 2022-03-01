@@ -69,6 +69,9 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     /// @notice A list of tiers (index) and yield bonuses (value), tiers.length = max tier
     uint256[] public yields;
 
+    /// @notice Emitted when the user claim mead of brewery
+    event Claim(address indexed owner, uint256 tokenId, uint256 amount, uint256 timestamp);
+
     function initialize(
         address _meadTokenAddress,
         address _tavernsKeep,
@@ -209,7 +212,10 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
      * @notice Claims all the rewards from every node that `msg.sender` owns
      */
     function claimAll() external {
-
+        uint256 balance = balanceOf(_msgSender());
+        for (uint256 index = 0; index < balance; index = index + 1) {
+            claim(tokenOfOwnerByIndex(_msgSender(), index));
+        }
     }
 
     function pendingMead(uint256 _tokenId) external view returns (uint256) {
@@ -220,7 +226,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     /**
      * @notice Claims the rewards from a specific node
      */
-    function claim(uint256 _tokenId) external {
+    function claim(uint256 _tokenId) public {
         require(ownerOf(_tokenId) == _msgSender(), "Must be owner of this brewery");
 
         // Award MEAD tokens
@@ -248,6 +254,8 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
         // Reset the claim timer so that individuals have to wait past the fermentation period again
         breweryStats[_tokenId].lastTimeClaimed = block.timestamp;
+
+        emit Claim(_msgSender(), _tokenId, newReward, block.timestamp);
     }
 
     /**
