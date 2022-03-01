@@ -1,10 +1,10 @@
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-abstract contract Renovation is Ownable, ERC721 {
+abstract contract Renovation is Initializable, OwnableUpgradeable, ERC721Upgradeable {
 
     uint256 public constant PRODUCTION_RATE = 0;
     uint256 public constant FERMENTATION_PERIOD = 1;
@@ -20,7 +20,9 @@ abstract contract Renovation is Ownable, ERC721 {
 
     mapping(uint256 => RenovationValues) values;
 
-    constructor() {
+    function initialize() external initializer {
+        __Ownable_init();
+        __ERC721_init("Renovation", "Reno");        
     }
 
     /**

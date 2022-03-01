@@ -142,6 +142,6 @@ contract PublicPresale is Initializable, OwnableUpgradeable, ReentrancyGuardUpgr
      * @notice Allows the owner to withdraw tokens that are currently sat/stuck in this contract
      */
     function withdraw(address _token) external onlyOwner {
-        IERC20(_token).transfer(msg.sender, IERC20(_token).balanceOf(address(this)));
+        IERC20Upgradeable(_token).transfer(msg.sender, IERC20Upgradeable(_token).balanceOf(address(this)));
     }
 }
