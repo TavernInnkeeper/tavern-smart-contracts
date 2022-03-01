@@ -24,9 +24,6 @@ contract Mead is IERC20, Ownable {
     /// @notice The total supply that is currently in circulation
     uint256 private _totalSupply;
 
-    /// @notice Address of USDC
-    address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
-
     /// @notice The address of the dex router
     IJoeRouter02 public dexRouter;
 
@@ -54,34 +51,22 @@ contract Mead is IERC20, Ownable {
     /**
      * @notice The constructor of the MEAD token
      */
-    constructor(address _routerAddress, address _tavernsKeep, uint256 _initialSupply) {
+    constructor(address _routerAddress, address _usdcAddress, address _tavernsKeep, uint256 _initialSupply) {
         tavernsKeep = _tavernsKeep;
 
         // Set up the router and the liquidity pair
         dexRouter = IJoeRouter02(_routerAddress);
-        liquidityPair = IJoeFactory(dexRouter.factory()).createPair(address(this), USDC);
+        liquidityPair = IJoeFactory(dexRouter.factory()).createPair(address(this), _usdcAddress);
 
         // Mint the initial supply to the deployer
         _mint(msg.sender, _initialSupply * 1**DECIMALS);
     }
 
     /**
-     * @notice Required to recieve AVAX
-     */
-    receive() external payable {}
-
-    /**
      * ==============================================================
      *             Admin Functions
      * ==============================================================
      */
-
-    /**
-     * @notice Withdraws stuck AVAX from the contract
-     */
-    function withdraw() external payable onlyOwner {
-        payable(owner()).transfer(address(this).balance);
-    }
 
     /**
      * @notice Withdraws stuck ERC-20 tokens from the contract

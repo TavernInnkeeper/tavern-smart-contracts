@@ -37,45 +37,6 @@ contract Brewery is ERC721Enumerable, Ownable {
     /// @notice The address for the renovation
     address public renovationAddress;
 
-    /// @notice The address of the dex router
-    IJoeRouter02 public dexRouter;
-
-    /// @notice The address of the pair for MEAD/USDC
-    IJoePair public liquidityPair;
-
-    /// @notice The upper liquidity ratio (when to apply the higher discount)
-    uint256 public liquidityRatio0 = 20 * PRECISION;
-
-    /// @notice The lower liquidity ratio (when to apply the lower discount)
-    uint256 public liquidityRatio1 = 1 * PRECISION;
-
-    /// @notice The discount (to be applied when the liquidity ratio is equal to or above `liquidityRatio0`)
-    uint256 public lpDiscount0 = 1 * PRECISION;
-
-    /// @notice The discount (to be applied when the liquidity ratio is equal to or less than `liquidityRatio1`)
-    uint256 public lpDiscount1 = 25 * PRECISION;
-
-    /// @notice The fee that is given to treasuries
-    uint256 public treasuryFee = 70 * PRECISION;
-
-    /// @notice The fee that is given to rewards pool
-    uint256 public rewardPoolFee = 30 * PRECISION;
-
-    struct BrewerStats {
-        address brewer;
-        uint256 reputation;
-        uint256 rewardsPerSecond;
-    }
-
-    /// @notice The reputation gained for purchasing a BREWERY with MEAD
-    uint256 public reputationPerBrewery;
-
-    /// @notice The reputation gained for purchasing a BREWERY with USDC
-    uint256 public reputationPerBreweryUSDC;
-
-    /// @notice The reputation gained for purchasing a BREWERY with LP
-    uint256 public reputationPerBreweryLP;
-
     struct BreweryStats {
         string name;                           // A unique string
         uint256 xp;                            // A XP value, increased on each claim
@@ -85,9 +46,6 @@ contract Brewery is ERC721Enumerable, Ownable {
         uint256 totalYield;                    // The total yield this brewery has produced
         uint256 lastTimeClaimed;               // The last time this brewery has had a claim
     }
-
-    /// @notice The cost of a BREWERY in MEAD tokens
-    uint256 public breweryCost;
 
     /// @notice Whether or not the USDC payments have been enabled (based on the treasury)
     bool public isUSDCEnabled;
@@ -114,10 +72,6 @@ contract Brewery is ERC721Enumerable, Ownable {
         tavernsKeep = _tavernsKeep;
         renovationAddress = _renovationAddress;
         meadToken = IERC20(_meadTokenAddress);
-
-        // Set up the router and the liquidity pair
-        dexRouter = IJoeRouter02(_routerAddress);
-        liquidityPair = IJoePair(IJoeFactory(dexRouter.factory()).getPair(_meadTokenAddress, USDC));
     }
 
     /**
@@ -276,100 +230,5 @@ contract Brewery is ERC721Enumerable, Ownable {
      */
     function _buyBrewery() internal {
         // TODO: Logic
-    }
-
-    /**
-     * @notice Purchases a BREWERY using MEAD
-     */
-    function buyBrewery() external {
-        uint256 meadAmount = breweryCost * getUSDCForMead();
-        IERC20(USDC).transfer(tavernsKeep, meadAmount * treasuryFee / (100 * PRECISION));
-        IERC20(USDC).transfer(rewardsPool, meadAmount * rewardPoolFee / (100 * PRECISION));
-    }
-
-    /**
-     * @notice Purchases a BREWERY using USDC
-     */
-    function buyBreweryWithUSDC() external {
-
-        // Handle the minting logic for a new BREWERY
-        _buyBrewery();
-
-        // Take payment for USDC tokens
-        require(isUSDCEnabled, "USDC discount off");
-        uint256 usdcAmount = breweryCost * getUSDCForMead();
-        IERC20(USDC).transfer(tavernsKeep, usdcAmount);
-    }
-    
-    /**
-     * @notice Purchases a BREWERY using LP tokens
-     */
-    function buyBreweryWithLP() external {
-
-        // Buy node
-        _buyBrewery();
-
-        // Take payment in MEAD-USDC LP tokens
-        uint256 discount = calculateLPDiscount();
-        require(discount <= lpDiscount0, "LP discount off");
-        uint256 breweryPriceInUSDC = breweryCost * getUSDCForMead();
-        uint256 breweryPriceInLP = getLPFromUSDC(breweryPriceInUSDC);
-        liquidityPair.transfer(tavernsKeep, breweryPriceInLP * (discount / (100 * PRECISION)));
-    }
-
-    /**
-     * @notice Calculates the current LP discount
-     */
-    function calculateLPDiscount() public view returns (uint256) {
-        (uint meadReserves, uint usdcReserves,) = liquidityPair.getReserves();
-        uint256 fullyDilutedValue = getUSDCForMead() * meadToken.totalSupply();
-
-        // If this is 5% its bad, if this is 20% its good
-        uint256 liquidityRatio = usdcReserves / fullyDilutedValue;
-
-        // X is liquidity ratio       (y0 = 5      y1 = 20)
-        // Y is discount              (x0 = 15     x1 =  1)
-        return (lpDiscount0 * (liquidityRatio1 - liquidityRatio) + lpDiscount1 * (liquidityRatio - liquidityRatio0)) / (liquidityRatio1 - liquidityRatio0);
-    }
-
-    /**
-     * @notice Calculates how much USDC 1 LP token is worth
-     */
-    function getUSDCForOneLP() public view returns (uint256) {
-        uint256 meadPrice = getUSDCForMead();
-        uint256 lpSupply = liquidityPair.totalSupply();
-        (uint meadReserves, uint usdcReserves,) = liquidityPair.getReserves();
-        uint256 meadValue = meadReserves * meadPrice;
-        uint256 usdcValue = usdcReserves;
-        return (meadValue + usdcValue) / lpSupply;
-    }
-
-    /**
-     * @notice Calculates how many LP tokens are worth `_amount` in USDC (for payment)
-     */
-    function getLPFromUSDC(uint256 _amount) public view returns (uint256) {
-        return _amount * (1 / getUSDCForOneLP());
-    }
-
-    /**
-     * @notice Returns how many MEAD tokens you get for 1 USDC
-     */
-    function getMeadforUSDC() public view returns (uint256) {
-        address[] memory path = new address[](2);
-        path[0] = address(meadToken);
-        path[1] = USDC;
-        uint256[] memory amountsOut = dexRouter.getAmountsIn(1e6, path);
-        return amountsOut[0];
-    }
-
-    /**
-     * @notice Returns how many USDC tokens you get for 1 MEAD
-     */
-    function getUSDCForMead() public view returns (uint256) {
-        address[] memory path = new address[](2);
-        path[0] = USDC;
-        path[1] = address(meadToken);
-        uint256[] memory amountsOut = dexRouter.getAmountsIn(1e18, path);
-        return amountsOut[0];
     }
 }
