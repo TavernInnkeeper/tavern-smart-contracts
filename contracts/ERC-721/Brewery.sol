@@ -24,16 +24,32 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     /// @notice The data contract containing all of the necessary settings
     TavernSettings settings;
 
+    /// @notice Whether or not trading is enabled 
+    bool public tradingEnabled;
+
     struct BreweryStats {
         string name;                                  // A unique string
+        uint32  tier;                                 // The index of tier to use
         uint256 xp;                                   // A XP value, increased on each claim
-        uint256 productionRatePerSecond;              // The production rate per second of this BREWERY, tied to its XP
+        bool enabled;                                 // If false, their production is temporarily disabled
         uint256 productionRatePerSecondMultiplier;    // The percentage increase to base yield
         uint256 fermentationPeriodMultiplier;         // The percentage decrease to the fermentation period
         uint256 experienceMultiplier;                 // The percentage increase to experience gain
         uint256 totalYield;                           // The total yield this brewery has produced
         uint256 lastTimeClaimed;                      // The last time this brewery has had a claim
     }
+
+    /// @notice A mapping of token ID to brewery stats
+    mapping (uint256 => BreweryStats) public breweryStats;
+
+    /// @notice A list of tiers (index) and XP values (value)
+    /// @dev tiers.length = max tier
+    uint256[] public tiers;
+
+    /// @notice A list of tiers (index) and production rates (value)
+    /// @dev tiers.length = max tier
+    /// @dev yields are in units that factor in the decimals of MEAD
+    uint256[] public yields;
 
     /// @notice The base amount of daily MEAD that each Brewery earns
     uint256 public baseProductionRatePerSecond;
@@ -44,14 +60,14 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     /// @notice The base experience amount awarded for each second past the fermentation period
     uint256 public baseExperiencePerSecond;
 
-    /// @notice A mapping of token ID to brewery stats
-    mapping (uint256 => BreweryStats) public breweryStats;
+    /// @notice The control variable to increase production rate globally
+    uint256 public globalProductionRateMultiplier;
 
-    /// @notice A list of tiers (index) and XP values (value), tiers.length = max tier.
-    uint256[] public tiers;
+    /// @notice The control variable to decrease fermentation period globally
+    uint256 public globalFermentationPeriodMultiplier;
 
-    /// @notice A list of tiers (index) and production rates (value), tiers.length = max tier
-    uint256[] public yields;
+    /// @notice The control variable to increase experience gain
+    uint256 public globalExperienceMultiplier;
 
     /// @notice Emitted when the user claim mead of brewery
     event Claim(address indexed owner, uint256 tokenId, uint256 amount, uint256 timestamp);
@@ -68,64 +84,106 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
         settings = TavernSettings(_tavernSettings);
 
-        baseFermentationPeriod = _baseFermentationPeriod;
         baseProductionRatePerSecond = _baseDailyYield / 86400;
+        baseFermentationPeriod = _baseFermentationPeriod;
         baseExperiencePerSecond = _baseExperiencePerSecond;
+
+        globalProductionRateMultiplier = 100 * settings.PRECISION();
+        globalFermentationPeriodMultiplier = 100 * settings.PRECISION();
+        globalExperienceMultiplier = 100 * settings.PRECISION();
     }
 
     /**
      * @notice Mints a new tokenID, checking if the string name already exists
      */
     function mint(address _to, uint256 _tokenId, string memory _name) external onlyOwner {
-        _mint(_to, _tokenId);
+        _safeMint(_to, _tokenId);
         breweryStats[_tokenId] = BreweryStats({
-            name: _name, 
+            name: _name,
+            tier: 0,
             xp: 0, 
-            productionRatePerSecond: baseProductionRatePerSecond,
-            productionRatePerSecondMultiplier: 100 * settings.PRECISION(), 
-            fermentationPeriodMultiplier: 100 * settings.PRECISION(),
-            experienceMultiplier: 100 * settings.PRECISION(),
+            enabled: true,
+            productionRatePerSecondMultiplier: 100 * settings.PRECISION(), // Default to 1.0x production rate
+            fermentationPeriodMultiplier: 100 * settings.PRECISION(),      // Default to 1.0x fermentation period
+            experienceMultiplier: 100 * settings.PRECISION(),              // Default to 1.0x experience
             totalYield: 0,
             lastTimeClaimed: block.timestamp
         });
     }
 
-    function getProductionRatePerSecond(uint256 _tokenId) public view returns(uint256) {
-        return breweryStats[_tokenId].productionRatePerSecond * breweryStats[_tokenId].productionRatePerSecondMultiplier / (100 * settings.PRECISION);
+    /**
+     * @dev See {IERC721Metadata-tokenURI}.
+     */
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+
+        string memory baseURI = _baseURI();
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
     }
 
+    /**
+     * @dev Base URI for computing {tokenURI}. If set, the resulting URI for each
+     * token will be the concatenation of the `baseURI` and the `tokenId`. Empty
+     * by default, can be overriden in child contracts.
+     */
+    function _baseURI() internal view virtual override returns (string memory) {
+        return "";
+    }
+
+    /**
+     * @notice Approves an address to spend a particular token
+     */
+    function _approve(address to, uint256 tokenId) internal virtual override {
+        require(tradingEnabled, "Trading is disabled");
+
+        // When you list a BREWERY (i.e. approving it on a marketplace), it disables its earning
+        if (to != address(0)) {
+            breweryStats[tokenId].enabled = false;
+        } else { 
+            breweryStats[tokenId].enabled = true;
+        }
+
+        super._approve(to, tokenId);
+    }
+
+    /**
+     * @notice Handles the internal transfer of any BREWERY
+     */
+    function _transfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual override {
+        require(tradingEnabled, "Trading is disabled");
+        super._transfer(from, to, tokenId);
+    }
+
+    /**
+     * @notice Calculates the production rate in MEAD for a particular BREWERY NFT
+     */
+    function getProductionRatePerSecond(uint256 _tokenId) public view returns(uint256) {
+        // The rate of the brewery based on its tier
+        uint256 breweryRate = yields[breweryStats[_tokenId].tier];
+
+        // The multiplier to add to it based on its renovations
+        uint256 multiplier = breweryStats[_tokenId].productionRatePerSecondMultiplier / (100 * settings.PRECISION());
+
+        // Control multiplier for periods of extra yield (i.e. double yield weekends), usually remains as 1.0x
+        uint256 global = globalProductionRateMultiplier / (100 * settings.PRECISION());
+
+        // Multipliers are multiplicative and not additive
+        return breweryRate * multiplier * global;
+    }
+
+    /**
+     * @notice Calculates the fermentation period in seconds
+     */
     function getFermentationPeriod(uint256 _tokenId) public view returns(uint256) {
-        return baseFermentationPeriod * breweryStats[_tokenId].fermentationPeriodMultiplier / (100 * settings.PRECISION());
+        return baseFermentationPeriod * breweryStats[_tokenId].fermentationPeriodMultiplier / (100 * settings.PRECISION()) * globalFermentationPeriodMultiplier;
     }
 
     function getExperiencePerSecond(uint256 _tokenId) public view returns(uint256) {
-        return baseExperiencePerSecond * breweryStats[_tokenId].experienceMultiplier / (100 * settings.PRECISION());
-    }
-
-    /**
-     * @notice Adds a tier and it's associated with XP value
-     */
-    function addTier(uint256 _xp, uint256 _yield) external onlyOwner {
-        tiers.push(_xp);
-        yields.push(_yield);
-    }
-
-    /**
-     * @notice Edits the XP value of a particular tier
-     */
-    function editTier(uint256 _tier, uint256 _xp, uint256 _yield) external onlyOwner {
-        require(tiers.length >= _tier, "Tier doesnt exist");
-        tiers[_tier - 1] = _xp;
-        yields[_tier - 1] = _yield;
-    }
-
-    /**
-     * @notice Clears the tiers array
-     * @dev Should only be used if wrong tiers were added
-     */
-    function clearTiers() external onlyOwner {
-        delete tiers;
-        delete yields;
+        return baseExperiencePerSecond * breweryStats[_tokenId].experienceMultiplier / (100 * settings.PRECISION()) * globalExperienceMultiplier;
     }
 
     /**
@@ -164,17 +222,6 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
      */
     function getMaxTiers() external view returns(uint256) {
         return tiers.length;
-    }
-
-    function giveXP(uint256 _tokenId, uint256 _xp) external onlyOwner {
-        breweryStats[_tokenId].xp += _xp;
-    }
-
-    /**
-     * @notice Levels up a BREWERY 
-     */
-    function levelUp(uint256 _tokenId) external { 
-
     }
 
     /**
@@ -269,14 +316,71 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
      *                   ADMIN FUNCTIONS
      * ================================================================
      */
+
+    /**
+     * @notice Changes whether trading/transfering these NFTs is enabled or not
+     */
+    function setTradingEnabled(bool _b) external onlyOwner {
+        tradingEnabled = _b;
+    }
+
+    /**
+     * @notice Adds a tier and it's associated with XP value
+     */
+    function addTier(uint256 _xp, uint256 _yield) external onlyOwner {
+        tiers.push(_xp);
+        yields.push(_yield);
+    }
+
+    /**
+     * @notice Edits the XP value of a particular tier
+     */
+    function editTier(uint256 _tier, uint256 _xp, uint256 _yield) external onlyOwner {
+        require(tiers.length >= _tier, "Tier doesnt exist");
+        tiers[_tier - 1] = _xp;
+        yields[_tier - 1] = _yield;
+    }
+
+    /**
+     * @notice Clears the tiers array
+     * @dev Should only be used if wrong tiers were added
+     */
+    function clearTiers() external onlyOwner {
+        delete tiers;
+        delete yields;
+    }
+
+    /**
+     * @notice Gives a certain amount of XP to a BREWERY
+     */
+    function giveXP(uint256 _tokenId, uint256 _xp) external onlyOwner {
+        breweryStats[_tokenId].xp += _xp;
+    }
+
+    /**
+     * @notice Sets a BREWERY to whether it can produce or not
+     */
+    function setEnableBrewery(uint256 _tokenId, bool _b) external onlyOwner {
+        breweryStats[_tokenId].enabled = _b;
+    }
+
+    /**
+     * @notice Sets the base fermentation period for all BREWERYs
+     */
     function setBaseFermentationPeriod(uint256 _baseFermentationPeriod) external onlyOwner {
         baseFermentationPeriod = _baseFermentationPeriod;
     }
 
+    /**
+     * @notice Sets the experience rate for all BREWERYs
+     */
     function setBaseExperiencePerSecond(uint256 _baseExperiencePerSecond) external onlyOwner {
         baseExperiencePerSecond = _baseExperiencePerSecond;
     }
 
+    /**
+     * @notice Sets the base production rate that all new minted BREWERYs start with
+     */
     function setBaseProductionRatePerSecond(uint256 _baseProductionRatePerSecond) external onlyOwner {
         baseProductionRatePerSecond = _baseProductionRatePerSecond;
     }
