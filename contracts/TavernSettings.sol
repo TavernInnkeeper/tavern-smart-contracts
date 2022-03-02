@@ -71,6 +71,10 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
     /// @notice The address for the renovation
     address public renovationAddress;
 
+    /// @notice The list of class taxes associated with each class
+    /// @dev classTaxes.length === ClassManager::classThresholds.length 
+    uint256[] public classTaxes;
+
     function initialize(
         address _xmead, 
         address _mead, 
@@ -95,5 +99,10 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
         // Set default settings
         breweryCost = 100 * mead.decimals();
         xMeadCost   = 90 * xmead.decimals();
+
+        classTaxes.push(18 * PRECISION); // 18%
+        classTaxes.push(16 * PRECISION); // 16%
+        classTaxes.push(14 * PRECISION); // 14%
+        classTaxes.push(12 * PRECISION); // 12%
     }
 }

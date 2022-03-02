@@ -25,13 +25,14 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     TavernSettings settings;
 
     struct BreweryStats {
-        string name;                           // A unique string
-        uint256 xp;                            // A XP value, increased on each claim
-        uint256 productionRatePerSecondMultiplier;      // The percentage increase to base yield
-        uint256 fermentationPeriodMultiplier;  // The percentage decrease to the fermentation period
-        uint256 experienceMultiplier;          // The percentage increase to experience gain
-        uint256 totalYield;                    // The total yield this brewery has produced
-        uint256 lastTimeClaimed;               // The last time this brewery has had a claim
+        string name;                                  // A unique string
+        uint256 xp;                                   // A XP value, increased on each claim
+        uint256 productionRatePerSecond;              // The production rate per second of this BREWERY, tied to its XP
+        uint256 productionRatePerSecondMultiplier;    // The percentage increase to base yield
+        uint256 fermentationPeriodMultiplier;         // The percentage decrease to the fermentation period
+        uint256 experienceMultiplier;                 // The percentage increase to experience gain
+        uint256 totalYield;                           // The total yield this brewery has produced
+        uint256 lastTimeClaimed;                      // The last time this brewery has had a claim
     }
 
     /// @notice The base amount of daily MEAD that each Brewery earns
@@ -87,7 +88,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     function getProductionRatePerSecond(uint256 _tokenId) public view returns(uint256) {
-        return baseProductionRatePerSecond * breweryStats[_tokenId].productionRatePerSecondMultiplier / (100 * settings.PRECISION);
+        return (baseProductionRatePerSecond + breweryStats[_tokenId].productionRatePerSecond) * breweryStats[_tokenId].productionRatePerSecondMultiplier / (100 * settings.PRECISION);
     }
 
     function getFermentationPeriod(uint256 _tokenId) public view returns(uint256) {
@@ -193,6 +194,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
     function getBrewersTax(address brewer) public view returns (uint256) {
         uint32 class = ClassManager(settings.classManager).getClass(brewer);
+        return settings.classTaxes(class);
     }
 
     /**
@@ -205,8 +207,10 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
         uint256 rewardPeriod = block.timestamp - breweryStats[_tokenId].lastTimeClaimed;
         uint256 newReward = rewardPeriod * getProductionRatePerSecond(_tokenId);
         uint256 claimTax = getBrewersTax(msg.sender);
-        Mead(settings.meadToken).safeTransferFrom(settings.rewardsPool, _msgSender(), newReward);
-        Mead(settings.meadToken).safeTransferFrom(settings.rewardsPool, _msgSender(), newReward);
+        uint256 treasuryAmount = newReward * (claimTax / 100 * settings.PRECISION());
+        uint256 rewardAmount = newReward - treasuryAmount;
+        Mead(settings.meadToken()).safeTransferFrom(settings.rewardsPool(), msg.sender, rewardAmount);
+        Mead(settings.meadToken()).safeTransferFrom(settings.rewardsPool(), settings.tavernsKeep(), treasuryAmount);
 
         // Check fermentation period and Increase XP
         uint256 fermentationPeriod = getFermentationPeriod(_tokenId);
@@ -221,7 +225,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
             uint256 tier = getTier(_tokenId);
             if (tier < tiers.length) {
                 if (breweryStats[_tokenId].xp >= tiers[tier]) {
-                    breweryStats[_tokenId].productionRatePerSecondMultiplier = yields[tier];
+                    breweryStats[_tokenId].productionRatePerSecond = yields[tier];
                 }
             }
         }
