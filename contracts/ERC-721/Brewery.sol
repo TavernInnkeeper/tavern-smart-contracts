@@ -9,6 +9,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./Renovation.sol";
 import "../TavernSettings.sol";
 
+import "../interfaces/IClassManager.sol";
+
 /**
  * @notice Brewerys are a custom ERC721 (NFT) that can gain experience and level up. They can also be upgraded.
  */
@@ -22,7 +24,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     string private constant SYMBOL = "BREWERY";
     
     /// @notice The data contract containing all of the necessary settings
-    TavernSettings settings;
+    TavernSettings public settings;
 
     /// @notice Whether or not trading is enabled 
     bool public tradingEnabled;
@@ -118,9 +120,6 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
         string memory baseURI = _baseURI();
         return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
-
-        
-
     }
 
     /**
@@ -241,7 +240,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
      * @notice Returns the brewers tax for the particular brewer
      */
     function getBrewersTax(address brewer) public view returns (uint256) {
-        uint32 class = settings.classManager().getClass(brewer);
+        uint32 class = IClassManager(settings.classManager()).getClass(brewer);
         return settings.classTaxes(class);
     }
 
