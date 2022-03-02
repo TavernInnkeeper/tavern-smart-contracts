@@ -28,12 +28,6 @@ contract Brewery is ERC721Enumerable, Ownable {
     /// @notice The contract address of the MEAD token
     IERC20 public meadToken;
 
-    /// @notice The wallet address of the governing treasury
-    address public tavernsKeep;
-
-    /// @notice The wallet address of the rewards pool
-    address public rewardsPool;
-
     /// @notice The address for the renovation
     address public renovationAddress;
 
@@ -46,9 +40,6 @@ contract Brewery is ERC721Enumerable, Ownable {
         uint256 totalYield;                    // The total yield this brewery has produced
         uint256 lastTimeClaimed;               // The last time this brewery has had a claim
     }
-
-    /// @notice Whether or not the USDC payments have been enabled (based on the treasury)
-    bool public isUSDCEnabled;
 
     /// @notice The base amount of daily MEAD that each Brewery earns
     uint256 public baseProductionRate;
@@ -69,7 +60,6 @@ contract Brewery is ERC721Enumerable, Ownable {
     uint256[] public yields;
 
     constructor(address _meadTokenAddress, address _routerAddress, address _tavernsKeep, address _renovationAddress, uint256 _initialSupply, uint256 _baseDailyYield, uint256 _baseFermentationPeriod) ERC721(NAME, SYMBOL) {
-        tavernsKeep = _tavernsKeep;
         renovationAddress = _renovationAddress;
         meadToken = IERC20(_meadTokenAddress);
     }

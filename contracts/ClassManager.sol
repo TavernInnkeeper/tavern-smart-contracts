@@ -38,7 +38,7 @@ contract ClassManager is Initializable, AccessControlUpgradeable {
         _;
     }
 
-    function initialize(address _xmead, address _usdc) external initializer {
+    function initialize() external initializer {
         __Context_init();
         __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -53,6 +53,7 @@ contract ClassManager is Initializable, AccessControlUpgradeable {
         for (uint32 i = 0; i < classThresholds.length - 1; ++i) {
             if (brewers[_account].reputation < classThresholds[i]) {
                 nextClass = i;
+                break;
             }
         }
         
