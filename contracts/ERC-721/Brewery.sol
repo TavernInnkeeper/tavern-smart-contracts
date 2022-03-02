@@ -28,10 +28,9 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     bool public tradingEnabled;
 
     struct BreweryStats {
-        string name;                                  // A unique string
+        string  name;                                 // A unique string
         uint32  tier;                                 // The index of tier to use
         uint256 xp;                                   // A XP value, increased on each claim
-        bool enabled;                                 // If false, their production is temporarily disabled
         uint256 productionRatePerSecondMultiplier;    // The percentage increase to base yield
         uint256 fermentationPeriodMultiplier;         // The percentage decrease to the fermentation period
         uint256 experienceMultiplier;                 // The percentage increase to experience gain
@@ -69,8 +68,9 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     /// @notice The control variable to increase experience gain
     uint256 public globalExperienceMultiplier;
 
-    /// @notice Emitted when the user claim mead of brewery
+    /// @notice Emitted events
     event Claim(address indexed owner, uint256 tokenId, uint256 amount, uint256 timestamp);
+    event LevelUp(address indexed owner, uint256 tokenId, uint32 tier, uint256 xp, uint256 timestamp);
 
     function initialize(
         address _tavernSettings,
@@ -101,8 +101,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
         breweryStats[_tokenId] = BreweryStats({
             name: _name,
             tier: 0,
-            xp: 0, 
-            enabled: true,
+            xp: 0,
             productionRatePerSecondMultiplier: 100 * settings.PRECISION(), // Default to 1.0x production rate
             fermentationPeriodMultiplier: 100 * settings.PRECISION(),      // Default to 1.0x fermentation period
             experienceMultiplier: 100 * settings.PRECISION(),              // Default to 1.0x experience
@@ -135,14 +134,6 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
      */
     function _approve(address to, uint256 tokenId) internal virtual override {
         require(tradingEnabled, "Trading is disabled");
-
-        // When you list a BREWERY (i.e. approving it on a marketplace), it disables its earning
-        if (to != address(0)) {
-            breweryStats[tokenId].enabled = false;
-        } else { 
-            breweryStats[tokenId].enabled = true;
-        }
-
         super._approve(to, tokenId);
     }
 
@@ -182,6 +173,9 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
         return baseFermentationPeriod * breweryStats[_tokenId].fermentationPeriodMultiplier / (100 * settings.PRECISION()) * globalFermentationPeriodMultiplier;
     }
 
+    /**
+     * @notice Calculates how much experience people earn per second
+     */
     function getExperiencePerSecond(uint256 _tokenId) public view returns(uint256) {
         return baseExperiencePerSecond * breweryStats[_tokenId].experienceMultiplier / (100 * settings.PRECISION()) * globalExperienceMultiplier;
     }
@@ -190,28 +184,26 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
      * @notice Calculates the tier of a particular token ID
      */
     function getTier(uint256 _tokenId) public view returns(uint256) {
-        // Tier 1: 0   - 99
-        // Tier 2: 100 - 249
-        // Tier 3: 250+
-        uint256 xp = breweryStats[_tokenId].xp / settings.PRECISION();
+        require(tiers.length > 0, "Tiers not set!");
+        uint256 xp = breweryStats[_tokenId].xp;
         for(uint i = 0; i < tiers.length; ++i) {
             if (xp > tiers[i]) {
                 continue;
             }
             return i;
         }
-        return 0;
+        return tiers.length;
     }
 
     /**
-     * @notice 
+     * @notice Returns the current yield based on XP
      */
     function getYield(uint256 _tokenId) public view returns(uint256) {
         return yields[getTier(_tokenId) - 1];
     }
 
     /**
-     * @notice 
+     * @notice Returns the yield based on tier
      */
     function getYieldFromTier(uint256 _tier) public view returns(uint256) {
         return yields[_tier - 1];
@@ -237,11 +229,14 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     /**
      * @notice Returns the unclaimed MEAD rewards for a given BREWERY 
      */
-    function pendingMead(uint256 _tokenId) external view returns (uint256) {
+    function pendingMead(uint256 _tokenId) public view returns (uint256) {
         uint256 rewardPeriod = block.timestamp - breweryStats[_tokenId].lastTimeClaimed;
         return rewardPeriod * getProductionRatePerSecond(_tokenId);
     }
 
+    /**
+     * @notice Returns the brewers tax for the particular brewer
+     */
     function getBrewersTax(address brewer) public view returns (uint256) {
         uint32 class = settings.classManager().getClass(brewer);
         return settings.classTaxes(class);
@@ -251,14 +246,14 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
      * @notice Claims the rewards from a specific node
      */
     function claim(uint256 _tokenId) public {
-        require(ownerOf(_tokenId) == _msgSender(), "Must be owner of this brewery");
+        require(ownerOf(_tokenId) == _msgSender(), "Must be owner of this BREWERY");
+        require(getApproved(_tokenId) == address(0), "BREWERY is approved for spending/listed");
 
         // Award MEAD tokens
-        uint256 rewardPeriod = block.timestamp - breweryStats[_tokenId].lastTimeClaimed;
-        uint256 newReward = rewardPeriod * getProductionRatePerSecond(_tokenId);
+        uint256 totalRewards = pendingMead(_tokenId);
         uint256 claimTax = getBrewersTax(msg.sender);
-        uint256 treasuryAmount = newReward * (claimTax / 100 * settings.PRECISION());
-        uint256 rewardAmount = newReward - treasuryAmount;
+        uint256 treasuryAmount = totalRewards * (claimTax / 100 * settings.PRECISION());
+        uint256 rewardAmount = totalRewards - treasuryAmount;
 
         // Transfer the resulting mead from the rewards pool to the user
         // Transfer the taxed portion of mead from the rewards pool to the treasury
@@ -277,17 +272,16 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
             // Check and compute a level up (i.e. increasing the brewerys yield)
             uint256 tier = getTier(_tokenId);
-            if (tier < tiers.length) {
-                if (breweryStats[_tokenId].xp >= tiers[tier]) {
-                    breweryStats[_tokenId].productionRatePerSecond = yields[tier];
-                }
+            if (tier < tiers.length && breweryStats[_tokenId].tier != tier) {
+                breweryStats[_tokenId].tier = tier;
+                emit LevelUp(msg.sender, _tokenId, tier, breweryStats[_tokenId].xp, block.timestamp);
             }
         }
 
         // Reset the claim timer so that individuals have to wait past the fermentation period again
         breweryStats[_tokenId].lastTimeClaimed = block.timestamp;
 
-        emit Claim(_msgSender(), _tokenId, newReward, block.timestamp);
+        emit Claim(_msgSender(), _tokenId, rewardAmount, block.timestamp);
     }
 
     /**
