@@ -51,8 +51,9 @@ contract ClassManager is Initializable, AccessControlUpgradeable {
     function _handleChange(address _account) internal {
         uint32 nextClass = 0;
         for (uint32 i = 0; i < classThresholds.length - 1; ++i) {
-            if (brewers[_account].reputation < classThresholds[i]) {
+            if (brewers[_account].reputation >= classThresholds[i]) {
                 nextClass = i;
+            } else {
                 break;
             }
         }
@@ -78,5 +79,13 @@ contract ClassManager is Initializable, AccessControlUpgradeable {
     function clearReputation(address _account) external isRole(MANAGER_ROLE) {
         brewers[_account].reputation = 0;
         _handleChange(_account);
+    }
+
+    function getClass(address _account) external view returns (uint32) {
+        return brewers[_account].class;
+    }
+
+    function getReputation(address _account) external view returns (uint256) {
+        return brewers[_account].reputation;
     }
 }

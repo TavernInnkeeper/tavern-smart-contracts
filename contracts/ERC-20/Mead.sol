@@ -1,14 +1,16 @@
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeRouter02.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
+
 
 /**
  * @notice The connective tissue of the Tavern.money ecosystem
  */
-contract Mead is IERC20, Ownable {
+contract Mead is Initializable, IERC20Upgradeable, OwnableUpgradeable {
     
     /// @notice Token Info
     string private constant NAME     = "Mead";
@@ -51,7 +53,9 @@ contract Mead is IERC20, Ownable {
     /**
      * @notice The constructor of the MEAD token
      */
-    constructor(address _routerAddress, address _usdcAddress, address _tavernsKeep, uint256 _initialSupply) {
+    function initialize(address _routerAddress, address _usdcAddress, address _tavernsKeep, uint256 _initialSupply) external initializer {
+        __Ownable_init();
+
         tavernsKeep = _tavernsKeep;
 
         // Set up the router and the liquidity pair
@@ -59,7 +63,7 @@ contract Mead is IERC20, Ownable {
         liquidityPair = IJoeFactory(dexRouter.factory()).createPair(address(this), _usdcAddress);
 
         // Mint the initial supply to the deployer
-        _mint(msg.sender, _initialSupply * 1**DECIMALS);
+        _mint(msg.sender, _initialSupply * 10**DECIMALS);
     }
 
     /**
@@ -72,7 +76,7 @@ contract Mead is IERC20, Ownable {
      * @notice Withdraws stuck ERC-20 tokens from the contract
      */
     function withdrawToken(address _token) external payable onlyOwner {
-        IERC20(_token).transfer(owner(), IERC20(_token).balanceOf(address(this)));
+        IERC20Upgradeable(_token).transfer(owner(), IERC20Upgradeable(_token).balanceOf(address(this)));
     }
 
     /**
@@ -119,14 +123,14 @@ contract Mead is IERC20, Ownable {
      * @notice Mints token to the treasury address
      */
     function mint(uint256 _amount) public onlyOwner {
-        _mint(msg.sender, _amount * 1**DECIMALS);
+        _mint(msg.sender, _amount * 10**DECIMALS);
     }
 
     /**
      * @notice Burns tokens from the treasury address
      */
     function burn(uint256 _amount) public onlyOwner {
-        _burn(msg.sender, _amount * 1**DECIMALS);
+        _burn(msg.sender, _amount * 10**DECIMALS);
     }
 
     /**

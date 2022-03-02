@@ -5,15 +5,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeRouter02.sol";
-import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
-import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoePair.sol";
-
-import "./ERC-20/Mead.sol";
-import "./ERC-20/xMead.sol";
-import "./ERC-721/Brewery.sol";
-import "./ClassManager.sol";
-import "./xMeadRedeemHelper.sol";
+import "./TavernSettings.sol";
 
 /**
  * @notice There are some conditions to make this work
@@ -25,56 +17,10 @@ import "./xMeadRedeemHelper.sol";
 contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    TavernSettings settings;
+
     /// @notice Used to give extra precision for percentages
     uint256 public constant PRECISION = 1e10;
-
-    /// @notice The wallet address of the governing treasury
-    address public tavernsKeep;
-
-    /// @notice The wallet address of the rewards pool
-    address public rewardsPool;
-
-    /// @notice The fee that is given to treasuries
-    uint256 public treasuryFee = 30 * PRECISION;
-
-    /// @notice The fee that is given to rewards pool
-    uint256 public rewardPoolFee = 70 * PRECISION;
-
-    /// @notice address of xMEAD
-    XMead public xmead;
-
-    /// @notice address for MEAD
-    Mead public mead;
-
-    /// @notice address for MEAD
-    ERC20Upgradeable public usdc;
-
-    /// @notice treasury for MEAD
-    Brewery public brewery;
-
-    /// @notice The xMead redeemer
-    xMeadRedeemHelper public redeemer;
-
-    /// @notice The reputation manager
-    ClassManager classManager;
-
-    /// @notice The address of the dex router
-    IJoeRouter02 public dexRouter;
-
-    /// @notice The address of the pair for MEAD/USDC
-    IJoePair public liquidityPair;
-
-    /// @notice The amount of wallets that can be bought in one transaction
-    uint256 public txLimit = 5;
-
-    /// @notice The limit of the amount of BREWERYs per wallet
-    uint256 public walletLimit = 100;
-
-    /// @notice The cost of a BREWERY in MEAD tokens
-    uint256 public breweryCost;
-
-    /// @notice The cost of BREWERY in xMEAD tokens
-    uint256 public xMeadCost;
 
     /// @notice Whether or not the USDC payments have been enabled (based on the treasury)
     bool public isUSDCEnabled;
@@ -115,15 +61,11 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
     /// @notice Relevant events to emit
     event Redeemed(address account, uint256 amount);
 
-    function initialize(address _xmead, address _mead, address _usdc, address _brewery, address _classManager) external initializer {
-        xmead = XMead(_xmead);
-        mead = Mead(_mead);
-        usdc = ERC20Upgradeable(_usdc);
-        brewery = Brewery(_brewery);
-        classManager = ClassManager(_classManager);
+    function initialize(address _settings) external initializer {
+        __Ownable_init();
 
-        breweryCost = 100 * mead.decimals();
-        xMeadCost   = 90 * xmead.decimals();
+        // Store the settings
+        settings = TavernSettings(_settings);
     }
 
     /**
@@ -147,7 +89,7 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
      */
     function purchaseWithXMead(string memory name) external {
 
-        uint256 xMeadAmount = xMeadCost * getUSDCForMead() * xmead.decimals();
+        uint256 xMeadAmount = settings.xMeadCost * getUSDCForMead() * settings.xmead.decimals();
         redeemer.redeem(xMeadAmount);
         mead.transferFrom(msg.sender, tavernsKeep, xMeadAmount * treasuryFee / (100 * PRECISION));
         mead.transferFrom(msg.sender, rewardsPool, xMeadAmount * rewardPoolFee / (100 * PRECISION));
