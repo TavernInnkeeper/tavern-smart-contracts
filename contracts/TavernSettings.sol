@@ -48,7 +48,7 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
     xMeadRedeemHelper public redeemer;
 
     /// @notice The contract for the class manager
-    ClassManager classManager;
+    ClassManager public classManager;
 
     /// @notice The contract of the TraderJoe router
     IJoeRouter02 public dexRouter;
@@ -104,5 +104,70 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
         classTaxes.push(16 * PRECISION); // 16%
         classTaxes.push(14 * PRECISION); // 14%
         classTaxes.push(12 * PRECISION); // 12%
+    }
+
+    /**
+     * ================================================================
+     *                   SETTERS
+     * ================================================================
+     */
+    function setTavernsKeep(address _tavernsKeep) external onlyOwner {
+        tavernsKeep = _tavernsKeep;
+    }
+
+    function setRewardsPool(address _rewardsPool) external onlyOwner {
+        rewardsPool = _rewardsPool;
+    }
+
+    function setTreasuryFee(uint256 _treasuryFee) external onlyOwner {
+        treasuryFee = _treasuryFee;
+    }
+
+    function setRewardPoolFee(uint256 _rewardPoolFee) external onlyOwner {
+        rewardPoolFee = _rewardPoolFee;
+    }
+
+    function setXMead(XMead _xMead) external onlyOwner {
+        xmead = _xMead;
+    }
+
+    function setMead(Mead _mead) external onlyOwner {
+        mead = _mead;
+    }
+
+    function setUSDC(ERC20Upgradeable _usdc) external onlyOwner {
+        usdc = _usdc;
+    }
+
+    function setBrewery(Brewery _brewery) external onlyOwner {
+        brewery = _brewery;
+    }
+
+    function setRedeemer(xMeadRedeemHelper _redeemer) external onlyOwner {
+        redeemer = _redeemer;
+    }
+
+    function setClassManager(ClassManager _classManager) external onlyOwner {
+        classManager = _classManager;
+    }
+
+    function setTxLimit(uint256 _txLimit) external onlyOwner {
+        txLimit = _txLimit;
+    }
+
+    function setWalletLimit(uint256 _walletLimit) external onlyOwner {
+        walletLimit = _walletLimit;
+    }
+
+    function setBreweryCost(uint256 _breweryCost) external onlyOwner {
+        breweryCost = _breweryCost;
+    }
+
+    function setXMeadCost(uint256 _xMeadCost) external onlyOwner {
+        xMeadCost = _xMeadCost;
+    }
+
+    function setRenovationAddress(address _renovationAddress) external onlyOwner {
+        renovationAddress = _renovationAddress;
     }
 }

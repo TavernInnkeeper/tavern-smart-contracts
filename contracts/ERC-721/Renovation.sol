@@ -4,7 +4,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-abstract contract Renovation is Initializable, OwnableUpgradeable, ERC721Upgradeable {
+contract Renovation is Initializable, OwnableUpgradeable, ERC721Upgradeable {
 
     uint256 public constant PRODUCTION_RATE = 0;
     uint256 public constant FERMENTATION_PERIOD = 1;
