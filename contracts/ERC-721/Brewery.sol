@@ -9,6 +9,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./Renovation.sol";
 import "../TavernSettings.sol";
 
+import "../interfaces/IClassManager.sol";
+
 /**
  * @notice Brewerys are a custom ERC721 (NFT) that can gain experience and level up. They can also be upgraded.
  */
@@ -22,7 +24,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     string private constant SYMBOL = "BREWERY";
     
     /// @notice The data contract containing all of the necessary settings
-    TavernSettings settings;
+    TavernSettings public settings;
 
     struct BreweryStats {
         string name;                                  // A unique string
@@ -91,7 +93,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     function getProductionRatePerSecond(uint256 _tokenId) public view returns(uint256) {
-        return breweryStats[_tokenId].productionRatePerSecond * breweryStats[_tokenId].productionRatePerSecondMultiplier / (100 * settings.PRECISION);
+        return breweryStats[_tokenId].productionRatePerSecond * breweryStats[_tokenId].productionRatePerSecondMultiplier / (100 * settings.PRECISION());
     }
 
     function getFermentationPeriod(uint256 _tokenId) public view returns(uint256) {
@@ -196,7 +198,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     function getBrewersTax(address brewer) public view returns (uint256) {
-        uint32 class = settings.classManager().getClass(brewer);
+        uint32 class = IClassManager(settings.classManager()).getClass(brewer);
         return settings.classTaxes(class);
     }
 

@@ -2,10 +2,14 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import "./TavernSettings.sol";
+import "./ERC-721/Brewery.sol";
+import "./ClassManager.sol";
+import "./xMeadRedeemHelper.sol";
 
 /**
  * @notice There are some conditions to make this work
@@ -17,7 +21,11 @@ import "./TavernSettings.sol";
 contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    TavernSettings settings;
+    /// @notice The data contract containing all of the necessary settings
+    TavernSettings public settings;
+
+    /// @notice Brewery contract
+    Brewery public brewery;
 
     /// @notice Used to give extra precision for percentages
     uint256 public constant PRECISION = 1e10;
@@ -61,11 +69,12 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
     /// @notice Relevant events to emit
     event Redeemed(address account, uint256 amount);
 
-    function initialize(address _settings) external initializer {
+    function initialize(address _settings, address _brewery) external initializer {
         __Ownable_init();
 
         // Store the settings
         settings = TavernSettings(_settings);
+        brewery = Brewery(_brewery);
     }
 
     /**
@@ -78,10 +87,10 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
      * @notice Handles the actual minting logic
      */
     function _mint(address account, string memory name, uint256 reputation) internal {
-        require(brewery.balanceOf(msg.sender) <= walletLimit, "Cant go over limit");
-        uint256 tokenId = Brewery(brewery).totalSupply() + 1;
-        Brewery(brewery).mint(account, tokenId, name);
-        classManager.addReputation(msg.sender, reputation);
+        require(brewery.balanceOf(msg.sender) <= settings.walletLimit(), "Cant go over limit");
+        uint256 tokenId = brewery.totalSupply() + 1;
+        brewery.mint(account, tokenId, name);
+        ClassManager(settings.classManager()).addReputation(msg.sender, reputation);
     }
 
     /**
@@ -89,10 +98,10 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
      */
     function purchaseWithXMead(string memory name) external {
 
-        uint256 xMeadAmount = settings.xMeadCost * getUSDCForMead() * settings.xmead.decimals();
-        redeemer.redeem(xMeadAmount);
-        mead.transferFrom(msg.sender, tavernsKeep, xMeadAmount * treasuryFee / (100 * PRECISION));
-        mead.transferFrom(msg.sender, rewardsPool, xMeadAmount * rewardPoolFee / (100 * PRECISION));
+        uint256 xMeadAmount = settings.xMeadCost() * getUSDCForMead() * ERC20Upgradeable(settings.mead()).decimals();
+        xMeadRedeemHelper(settings.redeemer()).redeem(xMeadAmount);
+        IERC20Upgradeable(settings.mead()).safeTransferFrom(msg.sender, settings.tavernsKeep(), xMeadAmount * settings.treasuryFee() / (100 * PRECISION));
+        IERC20Upgradeable(settings.mead()).safeTransferFrom(msg.sender, settings.rewardsPool(), xMeadAmount * settings.rewardPoolFee() / (100 * PRECISION));
 
         // Mint logic
         _mint(msg.sender, name, reputationForMead);
@@ -102,9 +111,9 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
      * @notice Purchases a BREWERY using MEAD
      */
     function purchaseWithMead(string memory name) external {
-        uint256 meadAmount = breweryCost * getUSDCForMead() * mead.decimals();
-        mead.transferFrom(msg.sender, tavernsKeep, meadAmount * treasuryFee / (100 * PRECISION));
-        mead.transferFrom(msg.sender, rewardsPool, meadAmount * rewardPoolFee / (100 * PRECISION));
+        uint256 meadAmount = settings.breweryCost() * getUSDCForMead() * ERC20Upgradeable(settings.mead()).decimals();
+        IERC20Upgradeable(settings.mead()).safeTransferFrom(msg.sender, settings.tavernsKeep(), meadAmount * settings.treasuryFee() / (100 * PRECISION));
+        IERC20Upgradeable(settings.mead()).safeTransferFrom(msg.sender, settings.rewardsPool(), meadAmount * settings.rewardPoolFee() / (100 * PRECISION));
 
         // Mint logic
         _mint(msg.sender, name, reputationForMead);
@@ -117,8 +126,8 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
         require(isUSDCEnabled, "USDC discount off");
 
         // Take payment for USDC tokens
-        uint256 usdcAmount = breweryCost * getUSDCForMead() * (100 - usdcDiscount) / (100 * PRECISION);
-        usdc.transferFrom(msg.sender, tavernsKeep, usdcAmount);
+        uint256 usdcAmount = settings.breweryCost() * getUSDCForMead() * (100 - usdcDiscount) / (100 * PRECISION);
+        IERC20Upgradeable(settings.usdc()).safeTransferFrom(msg.sender, settings.tavernsKeep(), usdcAmount);
 
         // Mint logic
         _mint(msg.sender, name, reputationForMead);
@@ -133,9 +142,9 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
         // Take payment in MEAD-USDC LP tokens
         uint256 discount = calculateLPDiscount();
         require(discount <= lpDiscount0, "LP discount off");
-        uint256 breweryPriceInUSDC = breweryCost * getUSDCForMead();
+        uint256 breweryPriceInUSDC = settings.breweryCost() * getUSDCForMead();
         uint256 breweryPriceInLP = getLPFromUSDC(breweryPriceInUSDC);
-        liquidityPair.transferFrom(msg.sender, tavernsKeep, breweryPriceInLP * ((100 * PRECISION - discount) / (100 * PRECISION)));
+        settings.liquidityPair().transferFrom(msg.sender, settings.tavernsKeep(), breweryPriceInLP * ((100 * PRECISION - discount) / (100 * PRECISION)));
 
         // Mint logic
         _mint(msg.sender, name, reputationForMead);
@@ -151,14 +160,14 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
 
         // Get the price of a brewery as if it were valued at the LP tokens rate + a fee for automatically zapping for you
         // Bear in mind this will still be discounted even though we take an extra fee!
-        uint256 breweryPriceInUSDCWithLPDiscount = breweryCost * getUSDCForMead() * discountMultiplier * zapFeeMultiplier;
+        uint256 breweryPriceInUSDCWithLPDiscount = settings.breweryCost() * getUSDCForMead() * discountMultiplier * zapFeeMultiplier;
 
         /// @notice Handles the zapping of liquitity for us + an extra fee
         /// @dev The LP tokens will now be in the hands of the msg.sender
         uint256 liquidityTokens = zapLiquidity(breweryPriceInUSDCWithLPDiscount * (100 * PRECISION + zapFee) / (100 * PRECISION));
 
         // Send the tokens from the account transacting this function to the taverns keep
-        liquidityPair.transferFrom(msg.sender, tavernsKeep, liquidityTokens);
+        settings.liquidityPair().transferFrom(msg.sender, settings.tavernsKeep(), liquidityTokens);
 
         // Mint logic
         _mint(msg.sender, name, reputationForMead);
@@ -173,11 +182,11 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
         uint256 half = usdcAmount / 2;
 
         address[] memory path = new address[](2);
-        path[0] = address(mead);
-        path[1] = address(usdc);
+        path[0] = settings.mead();
+        path[1] = settings.usdc();
 
         // Swap any USDC to receive 50 MEAD
-        uint[] memory amounts = dexRouter.swapExactTokensForTokens(
+        uint[] memory amounts = settings.dexRouter().swapExactTokensForTokens(
             half, 
             0, 
             path,
@@ -186,17 +195,17 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
         );
 
         // Transfer the tokens into the contract
-        mead.transferFrom(msg.sender, address(this), amounts[0]);
-        usdc.transferFrom(msg.sender, address(this), amounts[1]);
+        IERC20Upgradeable(settings.mead()).safeTransferFrom(msg.sender, address(this), amounts[0]);
+        IERC20Upgradeable(settings.usdc()).safeTransferFrom(msg.sender, address(this), amounts[1]);
 
         // Approve the router to spend these tokens 
-        mead.approve(address(dexRouter), amounts[0]);
-        usdc.approve(address(dexRouter), amounts[1]);
+        IERC20Upgradeable(settings.mead()).approve(address(settings.dexRouter()), amounts[0]);
+        IERC20Upgradeable(settings.usdc()).approve(address(settings.dexRouter()), amounts[1]);
 
         // Add liquidity (MEAD + USDC) to receive LP tokens
-        (, , uint liquidity) = dexRouter.addLiquidity(
-            address(mead),
-            address(usdc),
+        (, , uint liquidity) = settings.dexRouter().addLiquidity(
+            address(settings.mead()),
+            address(settings.usdc()),
             amounts[0],
             amounts[1],
             amounts[0] * (100 * PRECISION - zapSlippage),
@@ -212,8 +221,8 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
      * @notice Calculates the current LP discount
      */
     function calculateLPDiscount() public view returns (uint256) {
-        (, uint usdcReserves,) = liquidityPair.getReserves();
-        uint256 fullyDilutedValue = getUSDCForMead() * mead.totalSupply();
+        (, uint usdcReserves,) = settings.liquidityPair().getReserves();
+        uint256 fullyDilutedValue = getUSDCForMead() * IERC20Upgradeable(settings.mead()).totalSupply();
 
         // If this is 5% its bad, if this is 20% its good
         uint256 liquidityRatio = usdcReserves / fullyDilutedValue;
@@ -228,8 +237,8 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
      */
     function getUSDCForOneLP() public view returns (uint256) {
         uint256 meadPrice = getUSDCForMead();
-        uint256 lpSupply = liquidityPair.totalSupply();
-        (uint meadReserves, uint usdcReserves,) = liquidityPair.getReserves();
+        uint256 lpSupply = settings.liquidityPair().totalSupply();
+        (uint meadReserves, uint usdcReserves,) = settings.liquidityPair().getReserves();
         uint256 meadValue = meadReserves * meadPrice;
         uint256 usdcValue = usdcReserves;
         return (meadValue + usdcValue) / lpSupply;
@@ -247,9 +256,9 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
      */
     function getMeadforUSDC() public view returns (uint256) {
         address[] memory path = new address[](2);
-        path[0] = address(mead);
-        path[1] = address(usdc);
-        uint256[] memory amountsOut = dexRouter.getAmountsIn(10 ** usdc.decimals(), path);
+        path[0] = settings.mead();
+        path[1] = settings.usdc();
+        uint256[] memory amountsOut = settings.dexRouter().getAmountsIn(10 ** ERC20Upgradeable(settings.usdc()).decimals(), path);
         return amountsOut[0];
     }
 
@@ -258,9 +267,9 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
      */
     function getUSDCForMead() public view returns (uint256) {
         address[] memory path = new address[](2);
-        path[0] = address(usdc);
-        path[1] = address(mead);
-        uint256[] memory amountsOut = dexRouter.getAmountsIn(10 ** mead.decimals(), path);
+        path[0] = settings.mead();
+        path[1] = settings.usdc();
+        uint256[] memory amountsOut = settings.dexRouter().getAmountsIn(10 ** ERC20Upgradeable(settings.mead()).decimals(), path);
         return amountsOut[0];
     }
 
@@ -269,38 +278,6 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
      *            ADMIN FUNCTIONS
      * ============================================================
      */
-    function setTreasuryAddress(address _treasury) external onlyOwner {
-        tavernsKeep = _treasury;
-    }
-    
-    function setRewardsPool(address _rewardsPool) external onlyOwner {
-        rewardsPool = _rewardsPool;
-    }
-
-    function setTreasuryFee(uint256 _fee) external onlyOwner {
-        treasuryFee = _fee * PRECISION;
-    }
-
-    function setRewardsFee(uint256 _fee) external onlyOwner {
-        rewardPoolFee = _fee * PRECISION;
-    }
-
-    function setTransactionLimit(uint256 _limit) external onlyOwner {
-        txLimit = _limit;
-    }
-
-    function setWalletLimit(uint256 _limit) external onlyOwner {
-        walletLimit = _limit;
-    }
-
-    function setBreweryCost(uint256 _cost) external onlyOwner {
-        breweryCost = _cost;
-    }
-
-    function setXMeadCost(uint256 _cost) external onlyOwner {
-        xMeadCost = _cost;
-    }
-
     function setUSDCEnabled(bool _b) external onlyOwner {
         isUSDCEnabled = _b;
     }

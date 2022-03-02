@@ -1,19 +1,12 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeRouter02.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoePair.sol";
-
-import "./ERC-20/Mead.sol";
-import "./ERC-20/xMead.sol";
-import "./ERC-721/Brewery.sol";
-import "./ClassManager.sol";
-import "./xMeadRedeemHelper.sol";
 
 contract TavernSettings is Initializable, OwnableUpgradeable {
     
@@ -33,22 +26,19 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
     uint256 public rewardPoolFee = 70 * PRECISION;
 
     /// @notice The contract for xMEAD
-    XMead public xmead;
+    address public xmead;
 
     /// @notice The contract for MEAD
-    Mead public mead;
+    address public mead;
 
     /// @notice The contract for USDC
-    ERC20Upgradeable public usdc;
-
-    /// @notice The contract for BREWERYs
-    Brewery public brewery;
+    address public usdc;
 
     /// @notice The contract for xMEAD redeemer helper
-    xMeadRedeemHelper public redeemer;
+    address public redeemer;
 
     /// @notice The contract for the class manager
-    ClassManager public classManager;
+    address public classManager;
 
     /// @notice The contract of the TraderJoe router
     IJoeRouter02 public dexRouter;
@@ -79,26 +69,24 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
         address _xmead, 
         address _mead, 
         address _usdc, 
-        address _brewery, 
         address _classManager,
         address _routerAddress
     ) external initializer {
         __Ownable_init();
 
         // Set up the tavern contracts
-        xmead = XMead(_xmead);
-        mead = Mead(_mead);
-        usdc = ERC20Upgradeable(_usdc);
-        brewery = Brewery(_brewery);
-        classManager = ClassManager(_classManager);
+        xmead = _xmead;
+        mead = _mead;
+        usdc = _usdc;
+        classManager = _classManager;
 
         // Set up the router and the liquidity pair
         dexRouter = IJoeRouter02(_routerAddress);
         liquidityPair = IJoePair(IJoeFactory(dexRouter.factory()).getPair(_mead, _usdc));
 
         // Set default settings
-        breweryCost = 100 * mead.decimals();
-        xMeadCost   = 90 * xmead.decimals();
+        breweryCost = 100 * ERC20Upgradeable(mead).decimals();
+        xMeadCost   = 90 * ERC20Upgradeable(xmead).decimals();
 
         classTaxes.push(18 * PRECISION); // 18%
         classTaxes.push(16 * PRECISION); // 16%
@@ -127,27 +115,23 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
         rewardPoolFee = _rewardPoolFee;
     }
 
-    function setXMead(XMead _xMead) external onlyOwner {
+    function setXMead(address _xMead) external onlyOwner {
         xmead = _xMead;
     }
 
-    function setMead(Mead _mead) external onlyOwner {
+    function setMead(address _mead) external onlyOwner {
         mead = _mead;
     }
 
-    function setUSDC(ERC20Upgradeable _usdc) external onlyOwner {
+    function setUSDC(address _usdc) external onlyOwner {
         usdc = _usdc;
     }
 
-    function setBrewery(Brewery _brewery) external onlyOwner {
-        brewery = _brewery;
-    }
-
-    function setRedeemer(xMeadRedeemHelper _redeemer) external onlyOwner {
+    function setRedeemer(address _redeemer) external onlyOwner {
         redeemer = _redeemer;
     }
 
-    function setClassManager(ClassManager _classManager) external onlyOwner {
+    function setClassManager(address _classManager) external onlyOwner {
         classManager = _classManager;
     }
 
