@@ -31,6 +31,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
     struct BreweryStats {
         string  name;                                 // A unique string
+        uint32  type_;                                // The type of BREWERY (results in a different skin)
         uint32  tier;                                 // The index of tier to use
         uint256 xp;                                   // A XP value, increased on each claim
         uint256 productionRatePerSecondMultiplier;    // The percentage increase to base yield
@@ -119,7 +120,8 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
         string memory baseURI = _baseURI();
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
+        string memory tokenURI = tokenURIs[breweryStats[tokenId].type_][breweryStats[tokenId].tier];
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenURI)) : "";
     }
 
     /**
@@ -287,23 +289,42 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     /**
-     * @notice Renovations
+     * @notice Handle renovation upgrades.
+     * @dev Requires msg.sender to own the BREWERY, and to own a renovation
      */
     function upgrade(uint256 _tokenId, uint256 _renovationId) external {
-        Renovation reno = Renovation(settings.renovationAddress());
+        Renovation renovation = Renovation(settings.renovationAddress());
 
         require(ownerOf(_tokenId) == _msgSender(), "Must be owner of this brewery");
-        require(reno.ownerOf(_renovationId) == _msgSender(), "Must be owner of this renovation");
+        require(renovation.ownerOf(_renovationId) == _msgSender(), "Must be owner of this renovation");
 
-        // If renovation is type 0 (Production)
-        if (reno.getType(_renovationId) == 0) {
-            breweryStats[_tokenId].productionRatePerSecondMultiplier = reno.getIntValue(_renovationId);
-        } else if (reno.getType(_renovationId) == 1) {
-            // Type Fermentation Period
-            breweryStats[_tokenId].fermentationPeriodMultiplier = reno.getIntValue(_renovationId);
+        // Handle production rate upgrades
+        if (renovation.getType(_renovationId) == renovation.PRODUCTION_RATE()) {
+            breweryStats[_tokenId].productionRatePerSecondMultiplier = renovation.getIntValue(_renovationId);
+        } 
+        
+        // Handle fermentation period upgrades
+        if (renovation.getType(_renovationId) == renovation.FERMENTATION_PERIOD()) {
+            breweryStats[_tokenId].fermentationPeriodMultiplier = renovation.getIntValue(_renovationId);
+        } 
+        
+        // Handle experience rate upgrades
+        if (renovation.getType(_renovationId) == renovation.EXPERIENCE_BOOST()) {
+            breweryStats[_tokenId].experienceMultiplier = renovation.getIntValue(_renovationId);
+        } 
+        
+        // Handle type/skin changes
+        if (renovation.getType(_renovationId) == renovation.TYPE_CHANGE()) {
+            breweryStats[_tokenId].type_ = renovation.getIntValue(_renovationId);
         }
 
-        reno.consume(_renovationId);
+        // Handle type/skin changes
+        if (renovation.getType(_renovationId) == renovation.NAME_CHANGE()) {
+            breweryStats[_tokenId].name = renovation.getStrValue(_renovationId);
+        }
+
+        // Consume, destroy and burn the renovation!!!
+        renovation.consume(_renovationId);
     }
 
 

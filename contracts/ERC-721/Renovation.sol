@@ -9,7 +9,7 @@ contract Renovation is Initializable, OwnableUpgradeable, ERC721Upgradeable {
     uint256 public constant PRODUCTION_RATE = 0;
     uint256 public constant FERMENTATION_PERIOD = 1;
     uint256 public constant EXPERIENCE_BOOST = 2;
-    uint256 public constant SKIN_CHANGE = 3;
+    uint256 public constant TYPE_CHANGE = 3;
     uint256 public constant NAME_CHANGE = 4;
 
     struct RenovationValues {
