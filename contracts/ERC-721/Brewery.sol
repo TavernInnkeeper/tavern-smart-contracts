@@ -81,6 +81,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
         breweryStats[_tokenId] = BreweryStats({
             name: _name, 
             xp: 0, 
+            productionRatePerSecond: baseProductionRatePerSecond,
             productionRatePerSecondMultiplier: 100 * settings.PRECISION(), 
             fermentationPeriodMultiplier: 100 * settings.PRECISION(),
             experienceMultiplier: 100 * settings.PRECISION(),
@@ -90,7 +91,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     function getProductionRatePerSecond(uint256 _tokenId) public view returns(uint256) {
-        return (baseProductionRatePerSecond + breweryStats[_tokenId].productionRatePerSecond) * breweryStats[_tokenId].productionRatePerSecondMultiplier / (100 * settings.PRECISION);
+        return breweryStats[_tokenId].productionRatePerSecond * breweryStats[_tokenId].productionRatePerSecondMultiplier / (100 * settings.PRECISION);
     }
 
     function getFermentationPeriod(uint256 _tokenId) public view returns(uint256) {
@@ -195,7 +196,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     function getBrewersTax(address brewer) public view returns (uint256) {
-        uint32 class = ClassManager(settings.classManager).getClass(brewer);
+        uint32 class = settings.classManager().getClass(brewer);
         return settings.classTaxes(class);
     }
 
@@ -211,8 +212,12 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
         uint256 claimTax = getBrewersTax(msg.sender);
         uint256 treasuryAmount = newReward * (claimTax / 100 * settings.PRECISION());
         uint256 rewardAmount = newReward - treasuryAmount;
-        Mead(settings.meadToken()).safeTransferFrom(settings.rewardsPool(), msg.sender, rewardAmount);
-        Mead(settings.meadToken()).safeTransferFrom(settings.rewardsPool(), settings.tavernsKeep(), treasuryAmount);
+
+        // Transfer the resulting mead from the rewards pool to the user
+        // Transfer the taxed portion of mead from the rewards pool to the treasury
+        IERC20Upgradeable mead = IERC20Upgradeable(address(settings.mead()));
+        mead.safeTransferFrom(settings.rewardsPool(), msg.sender, rewardAmount);
+        mead.safeTransferFrom(settings.rewardsPool(), settings.tavernsKeep(), treasuryAmount);
 
         // Check fermentation period and Increase XP
         uint256 fermentationPeriod = getFermentationPeriod(_tokenId);
