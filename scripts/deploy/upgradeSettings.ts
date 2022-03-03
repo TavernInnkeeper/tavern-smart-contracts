@@ -10,7 +10,7 @@ async function main() {
   const [deployer, addr1, addr2, addr3, addr4] = await ethers.getSigners();
   
   const tavernSettings = await ethers.getContractFactory("TavernSettings");
-  await upgrades.upgradeProxy(PRESALE_MAINNET, tavernSettings);
+  await upgrades.upgradeProxy("", tavernSettings);
 
 }
 

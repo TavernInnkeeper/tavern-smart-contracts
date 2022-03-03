@@ -6,15 +6,11 @@ import { sleep } from "../helper/utils";
 import { PRESALE_MAINNET, USDC_MAINNET } from "./ADDRESSES";
 import { readFileSync } from "fs";
 
-const privateKey = '0x5d4ed99e95a40814d61cb1e8e9f442f70069051a295989225193601f17cd666a'
-
 async function main() {
-
-    const personal = new ethers.Wallet(privateKey, await ethers.getDefaultProvider());
 
     const [deployer, wallet42, wallet43, wallet44, wallet45, wallet46, wallet47, wallet48, wallet49] = await ethers.getSigners();
 
-    let accounts = JSON.parse(readFileSync("./scripts/accounts.json").toString()).accounts;
+    let accounts = JSON.parse(readFileSync("./accounts.json").toString()).accounts;
 
     const USDC = await ethers.getContractAt(ERC20, USDC_MAINNET);
     const presale = await ethers.getContractAt("WhitelistPresale", PRESALE_MAINNET);

@@ -206,21 +206,28 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         uint256 global = globalProductionRateMultiplier / (100 * settings.PRECISION());
 
         // Multipliers are multiplicative and not additive
-        return breweryRate;// * multiplier * global;
+        return breweryRate * multiplier * global;
     }
 
     /**
      * @notice Calculates the fermentation period in seconds
      */
     function getFermentationPeriod(uint256 _tokenId) public view returns(uint256) {
-        return baseFermentationPeriod * breweryStats[_tokenId].fermentationPeriodMultiplier * globalFermentationPeriodMultiplier / (100 * settings.PRECISION());
+
+        // The multiplier (values below 1.0 are good)
+        uint256 multiplier = breweryStats[_tokenId].fermentationPeriodMultiplier / (100 * settings.PRECISION());
+
+        // Control multiplier
+        uint256 global = globalFermentationPeriodMultiplier / (100 * settings.PRECISION());
+
+        return baseFermentationPeriod * multiplier * global;
     }
 
     /**
      * @notice Calculates how much experience people earn per second
      */
     function getExperiencePerSecond(uint256 _tokenId) public view returns(uint256) {
-        return baseExperiencePerSecond;// * breweryStats[_tokenId].experienceMultiplier * globalExperienceMultiplier / (100 * settings.PRECISION());
+        return baseExperiencePerSecond * breweryStats[_tokenId].experienceMultiplier * globalExperienceMultiplier / (100 * settings.PRECISION() * 100 * settings.PRECISION());
     }
 
     /**

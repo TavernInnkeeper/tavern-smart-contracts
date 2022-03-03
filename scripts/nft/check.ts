@@ -25,7 +25,6 @@ async function main() {
     console.log("\tName:", stats.name);
     console.log("\tType:", stats.type_.toString());
     console.log("\tCurrent Tier:", stats.tier.toString());
-    console.log("\tPending Tier:", (await Brewery.getTier(id)).toString());
     const xp = (await Brewery.getPendingXp(id)).add(stats.xp);
     console.log("\tCurrent Xp:", xp.toString());
 
