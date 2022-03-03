@@ -1,16 +1,15 @@
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeRouter02.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
 
 /**
  * @notice The inert receipt token for the presale, this gives The Tavern protocol flexibility and control over how this is handled
  */
-contract XMead is Initializable, OwnableUpgradeable, AccessControlUpgradeable {
+contract XMead is Ownable, AccessControl {
     
     /// @notice Token Info
     string private constant NAME     = "xMead";
@@ -45,10 +44,7 @@ contract XMead is Initializable, OwnableUpgradeable, AccessControlUpgradeable {
     /**
      * @notice The constructor of the xMEAD token
      */
-    function initialize() external initializer {
-        __Ownable_init();
-        __AccessControl_init();
-
+    constructor() {
         _totalIssued = 0;
         _totalSupply = 0;
 

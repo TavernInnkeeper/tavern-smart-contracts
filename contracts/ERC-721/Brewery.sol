@@ -4,7 +4,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import "./Renovation.sol";
 import "../TavernSettings.sol";
@@ -14,7 +18,7 @@ import "../interfaces/IClassManager.sol";
 /**
  * @notice Brewerys are a custom ERC721 (NFT) that can gain experience and level up. They can also be upgraded.
  */
-contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeable {
+contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /// @notice A descriptive name for a collection of NFTs in this contract
@@ -22,6 +26,11 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
     /// @notice An abbreviated name for NFTs in this contract
     string private constant SYMBOL = "BREWERY";
+
+    /// @notice The base URI of the NFT
+    string private baseURI;
+
+    mapping(uint256 => mapping(uint256 => string)) tokenURIs;
     
     /// @notice The data contract containing all of the necessary settings
     TavernSettings public settings;
@@ -29,16 +38,20 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     /// @notice Whether or not trading is enabled 
     bool public tradingEnabled;
 
+    /// @notice BREWERYs can't earn before this time
+    uint256 public startTime;
+
     struct BreweryStats {
-        string  name;                                 // A unique string
-        uint32  type_;                                // The type of BREWERY (results in a different skin)
-        uint32  tier;                                 // The index of tier to use
-        uint256 xp;                                   // A XP value, increased on each claim
-        uint256 productionRatePerSecondMultiplier;    // The percentage increase to base yield
-        uint256 fermentationPeriodMultiplier;         // The percentage decrease to the fermentation period
-        uint256 experienceMultiplier;                 // The percentage increase to experience gain
-        uint256 totalYield;                           // The total yield this brewery has produced
-        uint256 lastTimeClaimed;                      // The last time this brewery has had a claim
+        string  name;                              // A unique string
+        uint256 type_;                             // The type of BREWERY (results in a different skin)
+        uint256 tier;                              // The index of tier to use
+        bool    enabled;                           // Whether this BREWERY has its rewards enabled
+        uint256 xp;                                // A XP value, increased on each claim
+        uint256 productionRatePerSecondMultiplier; // The percentage increase to base yield
+        uint256 fermentationPeriodMultiplier;      // The percentage decrease to the fermentation period
+        uint256 experienceMultiplier;              // The percentage increase to experience gain
+        uint256 totalYield;                        // The total yield this brewery has produced
+        uint256 lastTimeClaimed;                   // The last time this brewery has had a claim
     }
 
     /// @notice A mapping of token ID to brewery stats
@@ -73,7 +86,16 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
     /// @notice Emitted events
     event Claim(address indexed owner, uint256 tokenId, uint256 amount, uint256 timestamp);
-    event LevelUp(address indexed owner, uint256 tokenId, uint32 tier, uint256 xp, uint256 timestamp);
+    event LevelUp(address indexed owner, uint256 tokenId, uint256 tier, uint256 xp, uint256 timestamp);
+
+    /// @notice The specific role to give to the Brewery Purchase Helper so it can mint BREWERYs
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
+    /// @notice Modifier to test that the caller has a specific role (interface to AccessControl)
+    modifier isRole(bytes32 role) {
+        require(hasRole(role, msg.sender), "Incorrect role!");
+        _;
+    }
 
     function initialize(
         address _tavernSettings,
@@ -83,7 +105,13 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     ) external initializer {
         __ERC721_init(NAME, SYMBOL);
         __ERC721Enumerable_init();
-        __Ownable_init();
+        __AccessControl_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+
+        startTime = 0;
+        tradingEnabled = false;
 
         settings = TavernSettings(_tavernSettings);
 
@@ -98,12 +126,17 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
     /**
      * @notice Mints a new tokenID, checking if the string name already exists
+     * @dev The BreweryPurchaseHelper and other helpers will use this function to create BREWERYs
      */
-    function mint(address _to, uint256 _tokenId, string memory _name) external onlyOwner {
-        _safeMint(_to, _tokenId);
-        breweryStats[_tokenId] = BreweryStats({
+    function mint(address _to, string memory _name) external isRole(MINTER_ROLE) {
+        require(balanceOf(msg.sender) <= settings.walletLimit(), "Cant go over limit");
+        uint256 tokenId = totalSupply() + 1;
+        _safeMint(_to, tokenId);
+        breweryStats[tokenId] = BreweryStats({
             name: _name,
-            tier: 0,
+            type_: 0,                                                      // Default type is 0
+            tier: 0,                                                       // Default tier is 0 (Tier 1)
+            enabled: true,                                                 // Start earning straight away
             xp: 0,
             productionRatePerSecondMultiplier: 100 * settings.PRECISION(), // Default to 1.0x production rate
             fermentationPeriodMultiplier: 100 * settings.PRECISION(),      // Default to 1.0x fermentation period
@@ -114,23 +147,28 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     /**
-     * @dev See {IERC721Metadata-tokenURI}.
+     * @dev Unused, specified to suppress compiler error for duplicates function from multiple parents
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721EnumerableUpgradeable, AccessControlUpgradeable) returns (bool) {
+        return interfaceId == type(IERC721EnumerableUpgradeable).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @notice Returns the total token URI based on the base URI, and the tokens type and tier
      */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
-        string memory baseURI = _baseURI();
-        string memory tokenURI = tokenURIs[breweryStats[tokenId].type_][breweryStats[tokenId].tier];
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenURI)) : "";
+        string memory baseNFTURI = _baseURI();
+        string memory tokenNFTURI = tokenURIs[breweryStats[tokenId].type_][breweryStats[tokenId].tier];
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseNFTURI, tokenNFTURI)) : "";
     }
 
     /**
-     * @dev Base URI for computing {tokenURI}. If set, the resulting URI for each
-     * token will be the concatenation of the `baseURI` and the `tokenId`. Empty
-     * by default, can be overriden in child contracts.
+     * @notice The base URI
      */
     function _baseURI() internal view virtual override returns (string memory) {
-        return "";
+        return baseURI;
     }
 
     /**
@@ -190,13 +228,13 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     function getTier(uint256 _tokenId) public view returns(uint256) {
         require(tiers.length > 0, "Tiers not set!");
         uint256 xp = breweryStats[_tokenId].xp;
-        for(uint i = 0; i < tiers.length; ++i) {
+        for(uint256 i = 0; i < tiers.length; ++i) {
             if (xp > tiers[i]) {
                 continue;
             }
             return i;
         }
-        return tiers.length;
+        return tiers.length - 1;
     }
 
     /**
@@ -231,10 +269,26 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     /**
+     * @notice Helper to calculate the reward period with respect to a start time
+     */
+    function _getRewardPeriod(uint256 currentTime, uint256 lastClaimed) internal view returns (uint256) {
+        // If we haven't passed the last time since we claimed (also the create time) then return zero as we haven't started yet
+        // If we we passed the last time since we claimed (or the create time), but we haven't passed it 
+        if (currentTime < startTime) {
+            return 0;
+        } else if (lastClaimed < startTime) {
+            return currentTime - startTime;
+        } else{
+            return currentTime - lastClaimed;
+        }
+    }
+
+    /**
      * @notice Returns the unclaimed MEAD rewards for a given BREWERY 
      */
     function pendingMead(uint256 _tokenId) public view returns (uint256) {
-        uint256 rewardPeriod = block.timestamp - breweryStats[_tokenId].lastTimeClaimed;
+        // rewardPeriod is 0 when currentTime is less than start time
+        uint256 rewardPeriod = _getRewardPeriod(block.timestamp, breweryStats[_tokenId].lastTimeClaimed);
         return rewardPeriod * getProductionRatePerSecond(_tokenId);
     }
 
@@ -242,7 +296,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
      * @notice Returns the brewers tax for the particular brewer
      */
     function getBrewersTax(address brewer) public view returns (uint256) {
-        uint32 class = IClassManager(settings.classManager()).getClass(brewer);
+        uint256 class = IClassManager(settings.classManager()).getClass(brewer);
         return settings.classTaxes(class);
     }
 
@@ -255,15 +309,17 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
         // Award MEAD tokens
         uint256 totalRewards = pendingMead(_tokenId);
-        uint256 claimTax = getBrewersTax(msg.sender);
-        uint256 treasuryAmount = totalRewards * (claimTax / 100 * settings.PRECISION());
-        uint256 rewardAmount = totalRewards - treasuryAmount;
+        if (totalRewards > 0) {
+            uint256 claimTax = getBrewersTax(msg.sender);
+            uint256 treasuryAmount = totalRewards * (claimTax / 100 * settings.PRECISION());
+            uint256 rewardAmount = totalRewards - treasuryAmount;
 
-        // Transfer the resulting mead from the rewards pool to the user
-        // Transfer the taxed portion of mead from the rewards pool to the treasury
-        IERC20Upgradeable mead = IERC20Upgradeable(address(settings.mead()));
-        mead.safeTransferFrom(settings.rewardsPool(), msg.sender, rewardAmount);
-        mead.safeTransferFrom(settings.rewardsPool(), settings.tavernsKeep(), treasuryAmount);
+            // Transfer the resulting mead from the rewards pool to the user
+            // Transfer the taxed portion of mead from the rewards pool to the treasury
+            IERC20Upgradeable mead = IERC20Upgradeable(address(settings.mead()));
+            mead.safeTransferFrom(settings.rewardsPool(), msg.sender, rewardAmount);
+            mead.safeTransferFrom(settings.rewardsPool(), settings.tavernsKeep(), treasuryAmount);
+        }
 
         // Check fermentation period and Increase XP
         uint256 fermentationPeriod = getFermentationPeriod(_tokenId);
@@ -284,8 +340,6 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
 
         // Reset the claim timer so that individuals have to wait past the fermentation period again
         breweryStats[_tokenId].lastTimeClaimed = block.timestamp;
-
-        emit Claim(_msgSender(), _tokenId, rewardAmount, block.timestamp);
     }
 
     /**
@@ -335,16 +389,44 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
      */
 
     /**
+     * @notice Sets a token URI for a given type and given tier
+     */
+    function setBaseURI(string memory _uri) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        baseURI = _uri;
+    }
+
+    /**
+     * @notice Sets a token URI for a given type and given tier
+     */
+    function setTokenURI(uint256 _type, uint256 _tier, string memory _uri) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        tokenURIs[_type][_tier] = _uri;
+    }
+
+    /**
+     * @notice Updates the settings contract
+     */
+    function setSettings(address _settings) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        settings = TavernSettings(_settings);
+    }
+    
+    /**
+     * @notice Sets the starting time
+     */
+    function setStartTime(uint256 _startTime) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        startTime = _startTime;
+    }
+
+    /**
      * @notice Changes whether trading/transfering these NFTs is enabled or not
      */
-    function setTradingEnabled(bool _b) external onlyOwner {
+    function setTradingEnabled(bool _b) external onlyRole(DEFAULT_ADMIN_ROLE) {
         tradingEnabled = _b;
     }
 
     /**
      * @notice Adds a tier and it's associated with XP value
      */
-    function addTier(uint256 _xp, uint256 _yield) external onlyOwner {
+    function addTier(uint256 _xp, uint256 _yield) external onlyRole(DEFAULT_ADMIN_ROLE) {
         tiers.push(_xp);
         yields.push(_yield);
     }
@@ -352,7 +434,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     /**
      * @notice Edits the XP value of a particular tier
      */
-    function editTier(uint256 _tier, uint256 _xp, uint256 _yield) external onlyOwner {
+    function editTier(uint256 _tier, uint256 _xp, uint256 _yield) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(tiers.length >= _tier, "Tier doesnt exist");
         tiers[_tier - 1] = _xp;
         yields[_tier - 1] = _yield;
@@ -362,7 +444,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
      * @notice Clears the tiers array
      * @dev Should only be used if wrong tiers were added
      */
-    function clearTiers() external onlyOwner {
+    function clearTiers() external onlyRole(DEFAULT_ADMIN_ROLE) {
         delete tiers;
         delete yields;
     }
@@ -370,35 +452,35 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, OwnableUpgradeab
     /**
      * @notice Gives a certain amount of XP to a BREWERY
      */
-    function giveXP(uint256 _tokenId, uint256 _xp) external onlyOwner {
+    function giveXP(uint256 _tokenId, uint256 _xp) external onlyRole(DEFAULT_ADMIN_ROLE) {
         breweryStats[_tokenId].xp += _xp;
     }
 
     /**
      * @notice Sets a BREWERY to whether it can produce or not
      */
-    function setEnableBrewery(uint256 _tokenId, bool _b) external onlyOwner {
+    function setEnableBrewery(uint256 _tokenId, bool _b) external onlyRole(DEFAULT_ADMIN_ROLE) {
         breweryStats[_tokenId].enabled = _b;
     }
 
     /**
      * @notice Sets the base fermentation period for all BREWERYs
      */
-    function setBaseFermentationPeriod(uint256 _baseFermentationPeriod) external onlyOwner {
+    function setBaseFermentationPeriod(uint256 _baseFermentationPeriod) external onlyRole(DEFAULT_ADMIN_ROLE) {
         baseFermentationPeriod = _baseFermentationPeriod;
     }
 
     /**
      * @notice Sets the experience rate for all BREWERYs
      */
-    function setBaseExperiencePerSecond(uint256 _baseExperiencePerSecond) external onlyOwner {
+    function setBaseExperiencePerSecond(uint256 _baseExperiencePerSecond) external onlyRole(DEFAULT_ADMIN_ROLE) {
         baseExperiencePerSecond = _baseExperiencePerSecond;
     }
 
     /**
      * @notice Sets the base production rate that all new minted BREWERYs start with
      */
-    function setBaseProductionRatePerSecond(uint256 _baseProductionRatePerSecond) external onlyOwner {
+    function setBaseProductionRatePerSecond(uint256 _baseProductionRatePerSecond) external onlyRole(DEFAULT_ADMIN_ROLE) {
         baseProductionRatePerSecond = _baseProductionRatePerSecond;
     }
 }

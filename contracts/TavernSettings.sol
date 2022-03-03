@@ -9,21 +9,8 @@ import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoePair.sol";
 
 contract TavernSettings is Initializable, OwnableUpgradeable {
-    
     /// @notice Used to give extra precision for percentages
     uint256 public constant PRECISION = 1e10;
-
-    /// @notice The wallet address of the governing treasury
-    address public tavernsKeep;
-
-    /// @notice The wallet address of the rewards pool
-    address public rewardsPool;
-
-    /// @notice The fee that is given to treasuries
-    uint256 public treasuryFee = 30 * PRECISION;
-
-    /// @notice The fee that is given to rewards pool
-    uint256 public rewardPoolFee = 70 * PRECISION;
 
     /// @notice The contract for xMEAD
     address public xmead;
@@ -46,11 +33,23 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
     /// @notice The contract of the TraderJoe liquidity pair
     IJoePair public liquidityPair;
 
+    /// @notice The wallet address of the governing treasury
+    address public tavernsKeep;
+
+    /// @notice The wallet address of the rewards pool
+    address public rewardsPool;
+
+    /// @notice The fee that is given to treasuries
+    uint256 public treasuryFee;
+
+    /// @notice The fee that is given to rewards pool
+    uint256 public rewardPoolFee;
+
     /// @notice The amount of wallets that can be bought in one transaction
-    uint256 public txLimit = 5;
+    uint256 public txLimit;
 
     /// @notice The limit of the amount of BREWERYs per wallet
-    uint256 public walletLimit = 100;
+    uint256 public walletLimit;
 
     /// @notice The cost of a BREWERY in MEAD tokens
     uint256 public breweryCost;
@@ -81,13 +80,14 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
         classManager = _classManager;
 
         // Set up the router and the liquidity pair
-        dexRouter = IJoeRouter02(_routerAddress);
+        dexRouter     = IJoeRouter02(_routerAddress);
         liquidityPair = IJoePair(IJoeFactory(dexRouter.factory()).getPair(_mead, _usdc));
 
         // Set default settings
-        breweryCost = 100 * ERC20Upgradeable(mead).decimals();
-        xMeadCost   = 90 * ERC20Upgradeable(xmead).decimals();
+        breweryCost = 100 * 10**ERC20Upgradeable(mead).decimals();
+        xMeadCost   = 90 * 10**ERC20Upgradeable(xmead).decimals();
 
+        // Default taxes
         classTaxes.push(18 * PRECISION); // 18%
         classTaxes.push(16 * PRECISION); // 16%
         classTaxes.push(14 * PRECISION); // 14%
@@ -96,7 +96,7 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
 
     /**
      * ================================================================
-     *                   SETTERS
+     *                          SETTERS
      * ================================================================
      */
     function setTavernsKeep(address _tavernsKeep) external onlyOwner {
@@ -153,5 +153,13 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
 
     function setRenovationAddress(address _renovationAddress) external onlyOwner {
         renovationAddress = _renovationAddress;
+    }
+
+    function clearClassTaxes() external onlyOwner {
+        delete classTaxes;
+    }
+
+    function addClassTax(uint256 _tax) external onlyOwner {
+        classTaxes.push(_tax);
     }
 }

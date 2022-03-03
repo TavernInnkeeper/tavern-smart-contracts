@@ -87,9 +87,7 @@ contract BreweryPurchaseHelper is Initializable, OwnableUpgradeable {
      * @notice Handles the actual minting logic
      */
     function _mint(address account, string memory name, uint256 reputation) internal {
-        require(brewery.balanceOf(msg.sender) <= settings.walletLimit(), "Cant go over limit");
-        uint256 tokenId = brewery.totalSupply() + 1;
-        brewery.mint(account, tokenId, name);
+        brewery.mint(account, name);
         ClassManager(settings.classManager()).addReputation(msg.sender, reputation);
     }
 

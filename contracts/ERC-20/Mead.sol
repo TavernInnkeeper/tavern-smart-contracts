@@ -36,13 +36,13 @@ contract Mead is Initializable, IERC20Upgradeable, OwnableUpgradeable {
     address public tavernsKeep;
 
     /// @notice Whether or not trading is enabled (can only be set to true)
-    bool public isTradingEnabled = false;
+    bool public isTradingEnabled;
 
     /// @notice The buy tax imposed on transfers from the liquidity pair (Unused unless necessary)
-    uint256 public buyTax = 0;
+    uint256 public buyTax;
 
     /// @notice The sell tax imposed on transfers to the liquidity pair (Starts at 25%, and slowly goes down to 8%)
-    uint256 public sellTax = 25;
+    uint256 public sellTax;
 
     /// @notice The addresses that are excluded from trading
     mapping(address => bool) public blacklist;
@@ -56,6 +56,12 @@ contract Mead is Initializable, IERC20Upgradeable, OwnableUpgradeable {
     function initialize(address _routerAddress, address _usdcAddress, address _tavernsKeep, uint256 _initialSupply) external initializer {
         __Ownable_init();
 
+        //
+        isTradingEnabled = false;
+        buyTax = 0;
+        sellTax = 25;
+
+        // Treasury address
         tavernsKeep = _tavernsKeep;
 
         // Set up the router and the liquidity pair

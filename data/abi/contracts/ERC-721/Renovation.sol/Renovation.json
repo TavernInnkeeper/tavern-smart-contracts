@@ -147,7 +147,7 @@
   },
   {
     "inputs": [],
-    "name": "SKIN_CHANGE",
+    "name": "TYPE_CHANGE",
     "outputs": [
       {
         "internalType": "uint256",
@@ -282,6 +282,13 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

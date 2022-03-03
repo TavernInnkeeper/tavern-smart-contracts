@@ -1,10 +1,10 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract Renovation is Initializable, OwnableUpgradeable, ERC721Upgradeable {
+contract Renovation is Initializable, OwnableUpgradeable, ERC721EnumerableUpgradeable {
 
     uint256 public constant PRODUCTION_RATE = 0;
     uint256 public constant FERMENTATION_PERIOD = 1;
@@ -22,7 +22,12 @@ contract Renovation is Initializable, OwnableUpgradeable, ERC721Upgradeable {
 
     function initialize() external initializer {
         __Ownable_init();
-        __ERC721_init("Renovation", "Reno");        
+        __ERC721_init("Renovation", "Reno");
+    }
+
+    function create(address to) external {
+        uint256 tokenId = totalSupply() + 1;
+        _safeMint(to, tokenId);
     }
 
     /**
