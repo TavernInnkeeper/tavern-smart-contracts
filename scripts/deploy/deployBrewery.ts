@@ -15,8 +15,8 @@ async function main() {
     const tavernsKeep         = deployer.address;
     const initialSupply       = ethers.utils.parseUnits("1000000", 18);    // 1,000,000
     const dailyYield          = ethers.utils.parseUnits("2", 18);          //         2
-    const fermentationPeriod  = ethers.utils.parseUnits("2", 18);          //         2
-    const experiencePerSecond = ethers.utils.parseUnits("2", 18);          //         2
+    const fermentationPeriod  = (14 * 86400).toString();                   //         14 days in seconds
+    const experiencePerSecond = "1";                                       //         2
 
     // Dependants: 
     const xMead = await deployContract("XMead");
@@ -62,9 +62,9 @@ async function main() {
     await Brewery.setTokenURI(0, 0, "/type/0/tier/0.json")
     await Brewery.setTokenURI(0, 1, "/type/0/tier/1.json")
     await Brewery.setTokenURI(0, 2, "/type/0/tier/2.json")
-    await Brewery.addTier("0", "20");
-    await Brewery.addTier("1", "40");
-    await Brewery.addTier("2", "60");
+    await Brewery.addTier("0", ethers.utils.parseUnits("2", await Mead.decimals()));
+    await Brewery.addTier("50", ethers.utils.parseUnits("3", await Mead.decimals()));
+    await Brewery.addTier("100", ethers.utils.parseUnits("4", await Mead.decimals()));
 
     await Brewery.mint(deployer.address, "TestNFT!");
     console.log("Minted!")

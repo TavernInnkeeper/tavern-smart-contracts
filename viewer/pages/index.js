@@ -20,10 +20,14 @@ export default function Home() {
   )
 }
 
+const myLoader = ({ src, width, quality }) => {
+  return `${src}`
+}
+
 function Nft() {
   const { loading, error, nft } = useNft(
-    "0x4C4a2f8c81640e47606d3fd77B353E87Ba015584",
-    "3"
+    "0xD0141E899a65C95a556fE2B27e5982A6DE7fDD7A",
+    "1"
   )
 
   // nft.loading is true during load.
@@ -36,7 +40,7 @@ function Nft() {
   return (
     <section>
       <h1>{nft.name}</h1>
-      <img src={nft.image} alt="" />
+      <Image loader={myLoader} src={nft.image} alt="" width={500} height={500}/>
       <p>{nft.description}</p>
       <p>Owner: {nft.owner}</p>
       <p>Metadata URL: {nft.metadataUrl}</p>

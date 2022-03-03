@@ -12,8 +12,9 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 
 import "./Renovation.sol";
 import "../TavernSettings.sol";
-
 import "../interfaces/IClassManager.sol";
+
+import "hardhat/console.sol";
 
 /**
  * @notice Brewerys are a custom ERC721 (NFT) that can gain experience and level up. They can also be upgraded.
@@ -110,7 +111,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
 
-        startTime = 0;
+        startTime = block.timestamp;
         tradingEnabled = false;
 
         settings = TavernSettings(_tavernSettings);
@@ -196,7 +197,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
      */
     function getProductionRatePerSecond(uint256 _tokenId) public view returns(uint256) {
         // The rate of the brewery based on its tier
-        uint256 breweryRate = yields[breweryStats[_tokenId].tier];
+        uint256 breweryRate = yields[breweryStats[_tokenId].tier] / 86400;
 
         // The multiplier to add to it based on its renovations
         uint256 multiplier = breweryStats[_tokenId].productionRatePerSecondMultiplier / (100 * settings.PRECISION());
@@ -205,21 +206,21 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         uint256 global = globalProductionRateMultiplier / (100 * settings.PRECISION());
 
         // Multipliers are multiplicative and not additive
-        return breweryRate * multiplier * global;
+        return breweryRate;// * multiplier * global;
     }
 
     /**
      * @notice Calculates the fermentation period in seconds
      */
     function getFermentationPeriod(uint256 _tokenId) public view returns(uint256) {
-        return baseFermentationPeriod * breweryStats[_tokenId].fermentationPeriodMultiplier / (100 * settings.PRECISION()) * globalFermentationPeriodMultiplier;
+        return baseFermentationPeriod * breweryStats[_tokenId].fermentationPeriodMultiplier * globalFermentationPeriodMultiplier / (100 * settings.PRECISION());
     }
 
     /**
      * @notice Calculates how much experience people earn per second
      */
     function getExperiencePerSecond(uint256 _tokenId) public view returns(uint256) {
-        return baseExperiencePerSecond * breweryStats[_tokenId].experienceMultiplier / (100 * settings.PRECISION()) * globalExperienceMultiplier;
+        return baseExperiencePerSecond;// * breweryStats[_tokenId].experienceMultiplier * globalExperienceMultiplier / (100 * settings.PRECISION());
     }
 
     /**
@@ -301,6 +302,23 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
     }
 
     /**
+     * @notice Calculates the pending XP rewards to view on the front end
+     */
+    function getPendingXp(uint256 _tokenId) public view returns (uint256) {
+        // Check fermentation period and Increase XP
+        uint256 fermentationPeriod = getFermentationPeriod(_tokenId);
+        uint256 fermentationTime = breweryStats[_tokenId].lastTimeClaimed + fermentationPeriod;
+
+        // Only award XP if we elapsed past the fermentation period
+        if (block.timestamp >= fermentationTime) {
+            uint256 timeSinceFermentation = block.timestamp - fermentationTime;
+            return timeSinceFermentation * getExperiencePerSecond(_tokenId);
+        } else {
+            return 0;
+        }
+    }
+
+    /**
      * @notice Claims the rewards from a specific node
      */
     function claim(uint256 _tokenId) public {
@@ -308,34 +326,29 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         require(getApproved(_tokenId) == address(0), "BREWERY is approved for spending/listed");
 
         // Award MEAD tokens
-        uint256 totalRewards = pendingMead(_tokenId);
-        if (totalRewards > 0) {
-            uint256 claimTax = getBrewersTax(msg.sender);
-            uint256 treasuryAmount = totalRewards * (claimTax / 100 * settings.PRECISION());
-            uint256 rewardAmount = totalRewards - treasuryAmount;
+        // uint256 totalRewards = pendingMead(_tokenId);
+        // if (totalRewards > 0) {
+        //     uint256 claimTax = getBrewersTax(msg.sender);
+        //     uint256 treasuryAmount = totalRewards * (claimTax / 100 * settings.PRECISION());
+        //     uint256 rewardAmount = totalRewards - treasuryAmount;
 
-            // Transfer the resulting mead from the rewards pool to the user
-            // Transfer the taxed portion of mead from the rewards pool to the treasury
-            IERC20Upgradeable mead = IERC20Upgradeable(address(settings.mead()));
-            mead.safeTransferFrom(settings.rewardsPool(), msg.sender, rewardAmount);
-            mead.safeTransferFrom(settings.rewardsPool(), settings.tavernsKeep(), treasuryAmount);
-        }
+        //     // Transfer the resulting mead from the rewards pool to the user
+        //     // Transfer the taxed portion of mead from the rewards pool to the treasury
+        //     IERC20Upgradeable mead = IERC20Upgradeable(address(settings.mead()));
+        //     mead.safeTransferFrom(settings.rewardsPool(), msg.sender, rewardAmount);
+        //     mead.safeTransferFrom(settings.rewardsPool(), settings.tavernsKeep(), treasuryAmount);
+        //
+        //     breweryStats[_tokenId].totalYield += totalRewards;
+        // }
 
-        // Check fermentation period and Increase XP
-        uint256 fermentationPeriod = getFermentationPeriod(_tokenId);
-        uint256 fermentationTime = breweryStats[_tokenId].lastTimeClaimed + fermentationPeriod;
+        // Award XP
+        breweryStats[_tokenId].xp += getPendingXp(_tokenId);
 
-        // Only award XP if we elapsed past the fermentation period
-        if (fermentationTime >= block.timestamp) {
-            uint256 timeSinceFermentation = block.timestamp - fermentationTime;
-            breweryStats[_tokenId].xp += timeSinceFermentation * getExperiencePerSecond(_tokenId);
-
-            // Check and compute a level up (i.e. increasing the brewerys yield)
-            uint256 tier = getTier(_tokenId);
-            if (tier < tiers.length && breweryStats[_tokenId].tier != tier) {
-                breweryStats[_tokenId].tier = tier;
-                emit LevelUp(msg.sender, _tokenId, tier, breweryStats[_tokenId].xp, block.timestamp);
-            }
+        // Check and compute a level up (i.e. increasing the brewerys yield)
+        uint256 tier = getTier(_tokenId);
+        if (tier < tiers.length && breweryStats[_tokenId].tier != tier) {
+            breweryStats[_tokenId].tier = tier;
+            emit LevelUp(msg.sender, _tokenId, tier, breweryStats[_tokenId].xp, block.timestamp);
         }
 
         // Reset the claim timer so that individuals have to wait past the fermentation period again
