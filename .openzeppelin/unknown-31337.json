@@ -14607,6 +14607,640 @@
           }
         }
       }
+    },
+    "78eb4363db27cb49a2cce7b6958e0c7f271f6db77f64dea5d5a3eb9645ecfdc2": {
+      "address": "0xeC1BB74f5799811c0c1Bff94Ef76Fb40abccbE4a",
+      "txHash": "0x083ea849f452903c9c1bb0e67b1c4d749135e90aca2e133b908bc7b818ad6e77",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:39"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:44"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\introspection\\ERC165Upgradeable.sol:41"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_name",
+            "type": "t_string_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:25"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_symbol",
+            "type": "t_string_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:28"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_owners",
+            "type": "t_mapping(t_uint256,t_address)",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:31"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_balances",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:34"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_tokenApprovals",
+            "type": "t_mapping(t_uint256,t_address)",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:37"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_operatorApprovals",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:40"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)44_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:458"
+          },
+          {
+            "contract": "ERC721EnumerableUpgradeable",
+            "label": "_ownedTokens",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\extensions\\ERC721EnumerableUpgradeable.sol:22"
+          },
+          {
+            "contract": "ERC721EnumerableUpgradeable",
+            "label": "_ownedTokensIndex",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\extensions\\ERC721EnumerableUpgradeable.sol:25"
+          },
+          {
+            "contract": "ERC721EnumerableUpgradeable",
+            "label": "_allTokens",
+            "type": "t_array(t_uint256)dyn_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\extensions\\ERC721EnumerableUpgradeable.sol:28"
+          },
+          {
+            "contract": "ERC721EnumerableUpgradeable",
+            "label": "_allTokensIndex",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\extensions\\ERC721EnumerableUpgradeable.sol:31"
+          },
+          {
+            "contract": "ERC721EnumerableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)46_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\extensions\\ERC721EnumerableUpgradeable.sol:175"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)34_storage)",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\AccessControlUpgradeable.sol:61"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\AccessControlUpgradeable.sol:235"
+          },
+          {
+            "contract": "Brewery",
+            "label": "baseURI",
+            "type": "t_string_storage",
+            "src": "contracts\\ERC-721\\Brewery.sol:30"
+          },
+          {
+            "contract": "Brewery",
+            "label": "tokenURIs",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_string_storage))",
+            "src": "contracts\\ERC-721\\Brewery.sol:32"
+          },
+          {
+            "contract": "Brewery",
+            "label": "settings",
+            "type": "t_contract(TavernSettings)10931",
+            "src": "contracts\\ERC-721\\Brewery.sol:35"
+          },
+          {
+            "contract": "Brewery",
+            "label": "tradingEnabled",
+            "type": "t_bool",
+            "src": "contracts\\ERC-721\\Brewery.sol:38"
+          },
+          {
+            "contract": "Brewery",
+            "label": "startTime",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:41"
+          },
+          {
+            "contract": "Brewery",
+            "label": "breweryStats",
+            "type": "t_mapping(t_uint256,t_struct(BreweryStats)7748_storage)",
+            "src": "contracts\\ERC-721\\Brewery.sol:57"
+          },
+          {
+            "contract": "Brewery",
+            "label": "tiers",
+            "type": "t_array(t_uint256)dyn_storage",
+            "src": "contracts\\ERC-721\\Brewery.sol:61"
+          },
+          {
+            "contract": "Brewery",
+            "label": "yields",
+            "type": "t_array(t_uint256)dyn_storage",
+            "src": "contracts\\ERC-721\\Brewery.sol:66"
+          },
+          {
+            "contract": "Brewery",
+            "label": "fermentationPeriod",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:69"
+          },
+          {
+            "contract": "Brewery",
+            "label": "experiencePerSecond",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:72"
+          },
+          {
+            "contract": "Brewery",
+            "label": "globalProductionRateMultiplier",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:75"
+          },
+          {
+            "contract": "Brewery",
+            "label": "globalFermentationPeriodMultiplier",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:78"
+          },
+          {
+            "contract": "Brewery",
+            "label": "globalExperienceMultiplier",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:81"
+          }
+        ],
+        "types": {
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_string_storage))": {
+            "label": "mapping(uint256 => mapping(uint256 => string))"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_uint256,t_string_storage)": {
+            "label": "mapping(uint256 => string)"
+          },
+          "t_contract(TavernSettings)10931": {
+            "label": "contract TavernSettings"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_struct(BreweryStats)7748_storage)": {
+            "label": "mapping(uint256 => struct Brewery.BreweryStats)"
+          },
+          "t_struct(BreweryStats)7748_storage": {
+            "label": "struct Brewery.BreweryStats",
+            "members": [
+              {
+                "label": "name",
+                "type": "t_string_storage"
+              },
+              {
+                "label": "type_",
+                "type": "t_uint256"
+              },
+              {
+                "label": "tier",
+                "type": "t_uint256"
+              },
+              {
+                "label": "enabled",
+                "type": "t_bool"
+              },
+              {
+                "label": "xp",
+                "type": "t_uint256"
+              },
+              {
+                "label": "productionRatePerSecondMultiplier",
+                "type": "t_uint256"
+              },
+              {
+                "label": "fermentationPeriodMultiplier",
+                "type": "t_uint256"
+              },
+              {
+                "label": "experienceMultiplier",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalYield",
+                "type": "t_uint256"
+              },
+              {
+                "label": "lastTimeClaimed",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)34_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)34_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)"
+          },
+          "t_array(t_uint256)46_storage": {
+            "label": "uint256[46]"
+          },
+          "t_mapping(t_uint256,t_address)": {
+            "label": "mapping(uint256 => address)"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))"
+          },
+          "t_array(t_uint256)44_storage": {
+            "label": "uint256[44]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "1ae77a2ee0658d081acce58def190aaef665605dcf64a9ea4cf7350d597b8cdd": {
+      "address": "0xAe9Ed85dE2670e3112590a2BB17b7283ddF44d9c",
+      "txHash": "0xe8b93f8fef1447c19248cf5029462e7161c06a5fef95dc3584a2b0559715114a",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:39"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:44"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\introspection\\ERC165Upgradeable.sol:41"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_name",
+            "type": "t_string_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:25"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_symbol",
+            "type": "t_string_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:28"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_owners",
+            "type": "t_mapping(t_uint256,t_address)",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:31"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_balances",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:34"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_tokenApprovals",
+            "type": "t_mapping(t_uint256,t_address)",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:37"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "_operatorApprovals",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:40"
+          },
+          {
+            "contract": "ERC721Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)44_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\ERC721Upgradeable.sol:458"
+          },
+          {
+            "contract": "ERC721EnumerableUpgradeable",
+            "label": "_ownedTokens",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\extensions\\ERC721EnumerableUpgradeable.sol:22"
+          },
+          {
+            "contract": "ERC721EnumerableUpgradeable",
+            "label": "_ownedTokensIndex",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\extensions\\ERC721EnumerableUpgradeable.sol:25"
+          },
+          {
+            "contract": "ERC721EnumerableUpgradeable",
+            "label": "_allTokens",
+            "type": "t_array(t_uint256)dyn_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\extensions\\ERC721EnumerableUpgradeable.sol:28"
+          },
+          {
+            "contract": "ERC721EnumerableUpgradeable",
+            "label": "_allTokensIndex",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\extensions\\ERC721EnumerableUpgradeable.sol:31"
+          },
+          {
+            "contract": "ERC721EnumerableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)46_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC721\\extensions\\ERC721EnumerableUpgradeable.sol:175"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)34_storage)",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\AccessControlUpgradeable.sol:61"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\AccessControlUpgradeable.sol:235"
+          },
+          {
+            "contract": "Brewery",
+            "label": "baseURI",
+            "type": "t_string_storage",
+            "src": "contracts\\ERC-721\\Brewery.sol:30"
+          },
+          {
+            "contract": "Brewery",
+            "label": "tokenURIs",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_string_storage))",
+            "src": "contracts\\ERC-721\\Brewery.sol:32"
+          },
+          {
+            "contract": "Brewery",
+            "label": "settings",
+            "type": "t_contract(TavernSettings)10931",
+            "src": "contracts\\ERC-721\\Brewery.sol:35"
+          },
+          {
+            "contract": "Brewery",
+            "label": "tradingEnabled",
+            "type": "t_bool",
+            "src": "contracts\\ERC-721\\Brewery.sol:38"
+          },
+          {
+            "contract": "Brewery",
+            "label": "startTime",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:41"
+          },
+          {
+            "contract": "Brewery",
+            "label": "breweryStats",
+            "type": "t_mapping(t_uint256,t_struct(BreweryStats)7748_storage)",
+            "src": "contracts\\ERC-721\\Brewery.sol:57"
+          },
+          {
+            "contract": "Brewery",
+            "label": "tiers",
+            "type": "t_array(t_uint256)dyn_storage",
+            "src": "contracts\\ERC-721\\Brewery.sol:61"
+          },
+          {
+            "contract": "Brewery",
+            "label": "yields",
+            "type": "t_array(t_uint256)dyn_storage",
+            "src": "contracts\\ERC-721\\Brewery.sol:66"
+          },
+          {
+            "contract": "Brewery",
+            "label": "fermentationPeriod",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:69"
+          },
+          {
+            "contract": "Brewery",
+            "label": "experiencePerSecond",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:72"
+          },
+          {
+            "contract": "Brewery",
+            "label": "globalProductionRateMultiplier",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:75"
+          },
+          {
+            "contract": "Brewery",
+            "label": "globalFermentationPeriodMultiplier",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:78"
+          },
+          {
+            "contract": "Brewery",
+            "label": "globalExperienceMultiplier",
+            "type": "t_uint256",
+            "src": "contracts\\ERC-721\\Brewery.sol:81"
+          }
+        ],
+        "types": {
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_string_storage))": {
+            "label": "mapping(uint256 => mapping(uint256 => string))"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_uint256,t_string_storage)": {
+            "label": "mapping(uint256 => string)"
+          },
+          "t_contract(TavernSettings)10931": {
+            "label": "contract TavernSettings"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_struct(BreweryStats)7748_storage)": {
+            "label": "mapping(uint256 => struct Brewery.BreweryStats)"
+          },
+          "t_struct(BreweryStats)7748_storage": {
+            "label": "struct Brewery.BreweryStats",
+            "members": [
+              {
+                "label": "name",
+                "type": "t_string_storage"
+              },
+              {
+                "label": "type_",
+                "type": "t_uint256"
+              },
+              {
+                "label": "tier",
+                "type": "t_uint256"
+              },
+              {
+                "label": "enabled",
+                "type": "t_bool"
+              },
+              {
+                "label": "xp",
+                "type": "t_uint256"
+              },
+              {
+                "label": "productionRatePerSecondMultiplier",
+                "type": "t_uint256"
+              },
+              {
+                "label": "fermentationPeriodMultiplier",
+                "type": "t_uint256"
+              },
+              {
+                "label": "experienceMultiplier",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalYield",
+                "type": "t_uint256"
+              },
+              {
+                "label": "lastTimeClaimed",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)34_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)34_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)"
+          },
+          "t_array(t_uint256)46_storage": {
+            "label": "uint256[46]"
+          },
+          "t_mapping(t_uint256,t_address)": {
+            "label": "mapping(uint256 => address)"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))"
+          },
+          "t_array(t_uint256)44_storage": {
+            "label": "uint256[44]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
     }
   }
 }

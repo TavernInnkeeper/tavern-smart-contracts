@@ -13,31 +13,31 @@ async function main() {
 
     /// GENEARL BREWERY INFO
     console.log("==== GENERAL INFO ====")
-    console.log("Contract:", Brewery.address);
-    console.log("Total Supply", (await Brewery.totalSupply()).toString());
-    console.log("Fermentation Period: ", Number(await Brewery.fermentationPeriod()) / 86400, "days");
-    console.log("Experience Per Second: ", (await Brewery.experiencePerSecond()).toString());
+    console.log("\tContract:", Brewery.address);
+    console.log("\tTotal Supply", (await Brewery.totalSupply()).toString());
+    console.log("\tFermentation Period: ", Number(await Brewery.fermentationPeriod()) / 86400, "days");
+    console.log("\tExperience Per Second: ", (await Brewery.experiencePerSecond()).toString());
     
     const tiers = await Brewery.getTiers();
     const yields = await Brewery.getYields();
     for (let i = 0; i < tiers.length; ++i) {
-        console.log(`Tier ${i+1}:`, `XP ${tiers[i]}`, `Yield ${ethers.utils.formatUnits(yields[i], 18)}`)
+        console.log(`\tTier ${i+1}:`, `XP ${tiers[i]}`, `Yield ${ethers.utils.formatUnits(yields[i], 18)}`)
     }
 
     /// Your Account
     const account = deployer.address;
-    console.log("==== BREWERS STATS ====")
-    console.log("Class:", (await ClassManager.getClass(account)).toString());
-    console.log("Reputation:", (await ClassManager.getReputation(account)).toString());
-    console.log("Brewery Count:", (await Brewery.balanceOf(account)).toString());
-    console.log("Pending Rewards:", (await Brewery.getTotalPendingMead(account)).toString());
-    console.log("Total Rewards:");
+    console.log("\n\n==== BREWERS STATS ====")
+    console.log("\tClass:", (await ClassManager.getClass(account)).toString());
+    console.log("\tReputation:", (await ClassManager.getReputation(account)).toString());
+    console.log("\tTax:", ethers.utils.formatUnits(await Brewery.getBrewersTax(account), 2) + "%");
+    console.log("\tBrewery Count:", (await Brewery.balanceOf(account)).toString());
+    console.log("\tPending Rewards:", ethers.utils.formatUnits(await Brewery.getTotalPendingMead(account), 18), "MEAD");
 
     /// SPECIFIC BREWERY INFO
     const id = "1";
     const stats = await Brewery.breweryStats(id);
 
-    console.log("\n==== Token", id, "====")
+    console.log("\n\n==== Token", id, "====")
     console.log("\tName:", stats.name);
     console.log("\tOwner:", await Brewery.ownerOf(id));
     console.log("\tURI:", await Brewery.tokenURI(id));
