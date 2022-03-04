@@ -8,6 +8,8 @@ import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeRouter02.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoePair.sol";
 
+import "./interfaces/IClassManager.sol";
+
 contract TavernSettings is Initializable, OwnableUpgradeable {
     /// @notice Used to give 2dp precision for percentages
     uint256 public constant PRECISION = 1e4;
@@ -69,9 +71,15 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
         address _mead, 
         address _usdc, 
         address _classManager,
-        address _routerAddress
+        address _routerAddress,
+        uint256[] memory _classTaxes
     ) external initializer {
         __Ownable_init();
+
+        uint256 classCount = IClassManager(_classManager).getClassCount();
+        require(classCount > 0, "Class manager not configured!");
+        require(_classTaxes.length == classCount, "Class tax array length isnt right");
+        
 
         // Set up the tavern contracts
         xmead = _xmead;
@@ -88,10 +96,7 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
         xMeadCost   = 90 * 10**ERC20Upgradeable(xmead).decimals();
 
         // Default taxes
-        classTaxes.push(1800); // 18%
-        classTaxes.push(1600); // 16%
-        classTaxes.push(1400); // 14%
-        classTaxes.push(1200); // 12%
+        classTaxes = _classTaxes;
     }
 
     /**

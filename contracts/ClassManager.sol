@@ -6,10 +6,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
+import "./interfaces/IClassManager.sol";
+
 /**
  * @notice Handles all the logic for reputation and classes for particular accounts
  */
-contract ClassManager is Initializable, AccessControlUpgradeable {
+contract ClassManager is Initializable, AccessControlUpgradeable, IClassManager {
 
     /// @notice The structs defining details that are associated with each address
     /// @dev class = 0 is Novice, they then start at 1
@@ -26,7 +28,7 @@ contract ClassManager is Initializable, AccessControlUpgradeable {
     /// @notice A mapping of accounts to their reputations
     mapping (address => Brewer) public brewers;
 
-    /// @notice
+    /// @notice Emitted when there is a change of class
     event ClassChanged(address account, uint256 reputation, uint32 class);
 
     /// @notice The specific role to give to contracts so they can manage the brewers reputation of accounts
@@ -38,10 +40,12 @@ contract ClassManager is Initializable, AccessControlUpgradeable {
         _;
     }
 
-    function initialize() external initializer {
+    function initialize(uint256[] memory _thresholds) external initializer {
         __Context_init();
         __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+        classThresholds = _thresholds;
     }
 
     /**
@@ -81,11 +85,23 @@ contract ClassManager is Initializable, AccessControlUpgradeable {
         _handleChange(_account);
     }
 
-    function getClass(address _account) external view returns (uint32) {
+    function getClass(address _account) external view override returns (uint32) {
         return brewers[_account].class;
     }
 
-    function getReputation(address _account) external view returns (uint256) {
+    function getReputation(address _account) external view override returns (uint256) {
         return brewers[_account].reputation;
+    }
+
+    function getClassCount() external view override returns (uint256) {
+        return classThresholds.length;
+    }
+
+    function clearClassThresholds() external isRole(DEFAULT_ADMIN_ROLE) {
+        delete classThresholds;
+    }
+
+    function addClassThreshold(uint256 _rep) external isRole(DEFAULT_ADMIN_ROLE) {
+        classThresholds.push(_rep);
     }
 }

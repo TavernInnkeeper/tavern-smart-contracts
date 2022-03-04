@@ -36,7 +36,7 @@ function Nft() {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchWrapper.fetchNft(
-        '0xb932C8342106776E73E39D695F3FFC3A9624eCE0',
+        '0x1D13fF25b10C9a6741DFdce229073bed652197c7',
         "1"
       ).then(r => {
         setNft(r);

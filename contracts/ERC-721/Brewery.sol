@@ -265,15 +265,15 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
     /**
      * @notice Helper to calculate the reward period with respect to a start time
      */
-    function _getRewardPeriod(uint256 currentTime, uint256 lastClaimed) internal view returns (uint256) {
+    function getRewardPeriod(uint256 lastClaimed) public view returns (uint256) {
         // If we haven't passed the last time since we claimed (also the create time) then return zero as we haven't started yet
         // If we we passed the last time since we claimed (or the create time), but we haven't passed it 
-        if (currentTime < startTime) {
+        if (block.timestamp < startTime) {
             return 0;
         } else if (lastClaimed < startTime) {
-            return currentTime - startTime;
-        } else{
-            return currentTime - lastClaimed;
+            return block.timestamp - startTime;
+        } else {
+            return block.timestamp - lastClaimed;
         }
     }
 
@@ -282,7 +282,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
      */
     function pendingMead(uint256 _tokenId) public view returns (uint256) {
         // rewardPeriod is 0 when currentTime is less than start time
-        uint256 rewardPeriod = _getRewardPeriod(block.timestamp, breweryStats[_tokenId].lastTimeClaimed);
+        uint256 rewardPeriod = getRewardPeriod(breweryStats[_tokenId].lastTimeClaimed);
         return rewardPeriod * getProductionRatePerSecond(_tokenId);
     }
 
@@ -319,20 +319,20 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         require(getApproved(_tokenId) == address(0), "BREWERY is approved for spending/listed");
 
         // Award MEAD tokens
-        // uint256 totalRewards = pendingMead(_tokenId);
-        // if (totalRewards > 0) {
-        //     uint256 claimTax = getBrewersTax(msg.sender);
-        //     uint256 treasuryAmount = totalRewards * (claimTax / 100 * settings.PRECISION());
-        //     uint256 rewardAmount = totalRewards - treasuryAmount;
+        uint256 totalRewards = pendingMead(_tokenId);
+        if (totalRewards > 0) {
+            uint256 claimTax = getBrewersTax(msg.sender);
+            uint256 treasuryAmount = totalRewards * claimTax / 1e4;
+            uint256 rewardAmount = totalRewards - treasuryAmount;
 
-        //     // Transfer the resulting mead from the rewards pool to the user
-        //     // Transfer the taxed portion of mead from the rewards pool to the treasury
-        //     IERC20Upgradeable mead = IERC20Upgradeable(address(settings.mead()));
-        //     mead.safeTransferFrom(settings.rewardsPool(), msg.sender, rewardAmount);
-        //     mead.safeTransferFrom(settings.rewardsPool(), settings.tavernsKeep(), treasuryAmount);
-        //
-        //     breweryStats[_tokenId].totalYield += totalRewards;
-        // }
+            // Transfer the resulting mead from the rewards pool to the user
+            // Transfer the taxed portion of mead from the rewards pool to the treasury
+            IERC20Upgradeable mead = IERC20Upgradeable(settings.mead());
+            mead.safeTransferFrom(settings.rewardsPool(), msg.sender, rewardAmount);
+            mead.safeTransferFrom(settings.rewardsPool(), settings.tavernsKeep(), treasuryAmount);
+        
+            breweryStats[_tokenId].totalYield += totalRewards;
+        }
 
         // Award XP
         breweryStats[_tokenId].xp += getPendingXp(_tokenId);

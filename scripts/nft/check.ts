@@ -29,6 +29,7 @@ async function main() {
 
     console.log("\n==== Token", id, "====")
     console.log("\tName:", stats.name);
+    console.log("\tOwner:", await Brewery.ownerOf(id));
     console.log("\tURI:", await Brewery.tokenURI(id));
     console.log("\tType:", stats.type_.toString());
     console.log("\tCurrent Tier:", stats.tier.toString());
@@ -39,6 +40,7 @@ async function main() {
 
     console.log("\tProduction Rate:", ethers.utils.formatUnits((await Brewery.getProductionRatePerSecond(id)).mul(86400), 18), "MEAD/day");
     console.log("\tPending Rewards:", ethers.utils.formatUnits(await Brewery.pendingMead(id), 18), "MEAD")
+    console.log("\tReward Period:", (await Brewery.getRewardPeriod(stats.lastTimeClaimed)).toString());
     console.log("\tLast Claim:", datetime);
     console.log("\tTotal Claimed:", ethers.utils.formatUnits(stats.totalYield, 18));
     console.log("\tProduction Rate Multiplier:", ethers.utils.formatUnits(stats.productionRatePerSecondMultiplier, 2) + "%");

@@ -4,4 +4,6 @@ interface IClassManager {
     function getClass(address _account) external view returns (uint32);
 
     function getReputation(address _account) external view returns (uint256);
+
+    function getClassCount() external view returns (uint256);
 }

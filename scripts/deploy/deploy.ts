@@ -1,8 +1,7 @@
-import hre, { ethers } from "hardhat";
+import { ethers } from "hardhat";
 import { deployContract, deployProxy } from "../../helper/deployer";
 
-import ERC20 from '../../abis/ERC20.json';
-import { dateString, sleep } from "../../helper/utils";
+import { dateString } from "../../helper/utils";
 import { TRADERJOE_ROUTER_MAINNET, USDC_MAINNET, XMEAD_MAINNET, XMEAD_TESTNET } from "../ADDRESSES";
 import { writeFileSync } from "fs";
 
@@ -27,7 +26,7 @@ async function main() {
     console.log("Mead", Mead.address);
 
     // Dependants: 
-    const ClassManager = await deployProxy("ClassManager");
+    const ClassManager = await deployProxy("ClassManager", ["0", "50", "500", "2500"]);
     console.log("ClassManager", ClassManager.address);
 
     // Dependants: 
@@ -36,8 +35,9 @@ async function main() {
     //   address _usdc, 
     //   address _classManager,
     //   address _routerAddress
-    const settings = await deployProxy("TavernSettings", xMead.address, Mead.address, usdcAddress, ClassManager.address, routerAddress);
-    console.log("settings", settings.address);
+    const taxes = ['1800', '1600', '1400', '1200']; // 18%, 16%, 14%, 12%
+    const settings = await deployProxy("TavernSettings", xMead.address, Mead.address, usdcAddress, ClassManager.address, routerAddress, taxes);
+    console.log("Settings", settings.address);
 
     // Configure settings
     await settings.setTavernsKeep(deployer.address);
