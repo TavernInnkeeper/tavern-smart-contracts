@@ -352,7 +352,8 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
     function getPendingXp(uint256 _tokenId) public view returns (uint256) {
         // Check fermentation period and Increase XP
         uint256 fermentationPeriod = getFermentationPeriod(_tokenId);
-        uint256 fermentationTime = breweryStats[_tokenId].lastTimeClaimed + fermentationPeriod;
+        uint256 xpStartTime = startTime > breweryStats[_tokenId].lastTimeClaimed ? startTime : breweryStats[_tokenId].lastTimeClaimed;
+        uint256 fermentationTime = xpStartTime + fermentationPeriod;
 
         // Only award XP if we elapsed past the fermentation period
         if (block.timestamp >= fermentationTime) {
