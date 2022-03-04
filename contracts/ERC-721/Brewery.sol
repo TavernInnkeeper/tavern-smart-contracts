@@ -111,9 +111,9 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         fermentationPeriod = _fermentationPeriod;
         experiencePerSecond = _experiencePerSecond;
 
-        globalProductionRateMultiplier = settings.PRECISION();     // 10000 (100.00% or 1.0x)
-        globalFermentationPeriodMultiplier = settings.PRECISION(); // 10000 (100.00% or 1.0x)
-        globalExperienceMultiplier = settings.PRECISION();         // 10000 (100.00% or 1.0x)
+        globalProductionRateMultiplier = 1e4;     // 10000 (100.00% or 1.0x)
+        globalFermentationPeriodMultiplier = 1e4; // 10000 (100.00% or 1.0x)
+        globalExperienceMultiplier = 1e4;         // 10000 (100.00% or 1.0x)
 
         startTime = block.timestamp;
         tradingEnabled = false;
