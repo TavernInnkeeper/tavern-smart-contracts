@@ -93,6 +93,10 @@ contract ClassManager is Initializable, AccessControlUpgradeable, IClassManager 
         return brewers[_account].reputation;
     }
 
+    function getClassThresholds() external view returns (uint256[] memory) {
+        return classThresholds;
+    }
+
     function getClassCount() external view override returns (uint256) {
         return classThresholds.length;
     }

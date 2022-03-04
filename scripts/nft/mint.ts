@@ -8,13 +8,13 @@ import { Brewery_address } from "../NFT_ADDRESSES";
 
 async function main() {
     // The signers
-    const [deployer] = await ethers.getSigners();
+    const [deployer, alice] = await ethers.getSigners();
 
     const Brewery = await ethers.getContractAt("Brewery", Brewery_address)
     console.log("Brewery", Brewery.address);
     console.log("Brewery", await Brewery.totalSupply());
 
-    await Brewery.mint(deployer.address, "TestNFT!");
+    await Brewery.connect(alice).mint(deployer.address, "TestNFT!");
     console.log("Minted!")
 }
 

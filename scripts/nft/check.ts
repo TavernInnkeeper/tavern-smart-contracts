@@ -2,13 +2,14 @@
 
 import { ethers } from "hardhat";
 import { dateString } from "../../helper/utils";
-import { Brewery_address } from "../NFT_ADDRESSES";
+import { Brewery_address, ClassManager_address } from "../NFT_ADDRESSES";
 
 async function main() {
     // The signers
     const [deployer] = await ethers.getSigners();
 
-    const Brewery = await ethers.getContractAt("Brewery", Brewery_address)
+    const ClassManager = await ethers.getContractAt("ClassManager", ClassManager_address);
+    const Brewery = await ethers.getContractAt("Brewery", Brewery_address);
 
     /// GENEARL BREWERY INFO
     console.log("==== GENERAL INFO ====")
@@ -22,6 +23,15 @@ async function main() {
     for (let i = 0; i < tiers.length; ++i) {
         console.log(`Tier ${i+1}:`, `XP ${tiers[i]}`, `Yield ${ethers.utils.formatUnits(yields[i], 18)}`)
     }
+
+    /// Your Account
+    const account = deployer.address;
+    console.log("==== BREWERS STATS ====")
+    console.log("Class:", (await ClassManager.getClass(account)).toString());
+    console.log("Reputation:", (await ClassManager.getReputation(account)).toString());
+    console.log("Brewery Count:", (await Brewery.balanceOf(account)).toString());
+    console.log("Pending Rewards:", (await Brewery.getTotalPendingMead(account)).toString());
+    console.log("Total Rewards:");
 
     /// SPECIFIC BREWERY INFO
     const id = "1";
@@ -40,12 +50,12 @@ async function main() {
 
     console.log("\tProduction Rate:", ethers.utils.formatUnits((await Brewery.getProductionRatePerSecond(id)).mul(86400), 18), "MEAD/day");
     console.log("\tPending Rewards:", ethers.utils.formatUnits(await Brewery.pendingMead(id), 18), "MEAD")
-    console.log("\tReward Period:", (await Brewery.getRewardPeriod(stats.lastTimeClaimed)).toString());
+    console.log("\tReward Period:", (await Brewery.getRewardPeriod(stats.lastTimeClaimed)).toString(), "s");
     console.log("\tLast Claim:", datetime);
     console.log("\tTotal Claimed:", ethers.utils.formatUnits(stats.totalYield, 18));
     console.log("\tProduction Rate Multiplier:", ethers.utils.formatUnits(stats.productionRatePerSecondMultiplier, 2) + "%");
     console.log("\tFermentation Period Multiplier:", ethers.utils.formatUnits(stats.fermentationPeriodMultiplier, 2) + "%");
-    console.log("\tFermentation Period Multiplier:", ethers.utils.formatUnits(stats.experienceMultiplier, 2) + "%");
+    console.log("\tExperience Multiplier:", ethers.utils.formatUnits(stats.experienceMultiplier, 2) + "%");
 }
 
 main()

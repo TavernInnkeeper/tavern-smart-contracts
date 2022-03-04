@@ -104,6 +104,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, address(this));
 
         settings = TavernSettings(_tavernSettings);
 
@@ -122,7 +123,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
      * @notice Mints a new tokenID, checking if the string name already exists
      * @dev The BreweryPurchaseHelper and other helpers will use this function to create BREWERYs
      */
-    function mint(address _to, string memory _name) external isRole(MINTER_ROLE) {
+    function mint(address _to, string memory _name) public isRole(MINTER_ROLE) {
         require(balanceOf(_to) < settings.walletLimit(), "Cant go over limit");
         uint256 tokenId = totalSupply() + 1;
         _safeMint(_to, tokenId);
@@ -138,6 +139,45 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
             totalYield: 0,
             lastTimeClaimed: block.timestamp
         });
+    }
+
+    /**
+     * @notice Compounds all pending MEAD into new BREWERYs!
+     */
+    function compoundAll() external {
+        uint256 totalRewards = getTotalPendingMead(msg.sender);
+        uint256 breweryCount = totalRewards / settings.breweryCost();
+        require(breweryCount > 0, "You dont have enough pending MEAD");
+        _compound(breweryCount);
+    }
+
+    /**
+     * @notice Function that
+     */
+    function compound(uint256 _amount) public {
+        uint256 totalRewards = getTotalPendingMead(msg.sender);
+        uint256 breweryCount = totalRewards / settings.breweryCost();
+        require(breweryCount >= _amount, "Cannot compound this amount");
+        _compound(_amount);
+    }
+
+    /**
+     * @notice Compounds MEAD
+     */
+    function _compound(uint256 _amount) internal {
+        uint256 totalRewards = getTotalPendingMead(msg.sender);
+        uint256 cost = _amount * settings.breweryCost();
+        require(totalRewards >= cost, "You dont have enough pending MEAD");
+
+        uint256 count = balanceOf(msg.sender);
+        for(uint256 i = 0; i < count; ++i) {
+            uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
+            if (totalRewards >= settings.breweryCost()) {
+                totalRewards -= pendingMead(tokenId);
+                breweryStats[tokenId].lastTimeClaimed = block.timestamp;
+                mint(msg.sender, "");
+            }
+        }
     }
 
     /**
@@ -284,6 +324,18 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         // rewardPeriod is 0 when currentTime is less than start time
         uint256 rewardPeriod = getRewardPeriod(breweryStats[_tokenId].lastTimeClaimed);
         return rewardPeriod * getProductionRatePerSecond(_tokenId);
+    }
+
+    /**
+     * @notice Gets the total amount of pending MEAD across all of this users BREWERYs
+     */
+    function getTotalPendingMead(address account) public view returns (uint256) {
+        uint256 totalPending = 0;
+        uint256 count = balanceOf(account);
+        for(uint256 i = 0; i < count; ++i) {
+            totalPending += pendingMead(tokenOfOwnerByIndex(account, i));
+        }
+        return totalPending;
     }
 
     /**
