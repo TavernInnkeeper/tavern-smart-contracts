@@ -110,9 +110,9 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         fermentationPeriod = _fermentationPeriod;
         experiencePerSecond = _experiencePerSecond;
 
-        globalProductionRateMultiplier = 100 * settings.PRECISION();
-        globalFermentationPeriodMultiplier = 100 * settings.PRECISION();
-        globalExperienceMultiplier = 100 * settings.PRECISION();
+        globalProductionRateMultiplier = settings.PRECISION();     // 10000 (100.00% or 1.0x)
+        globalFermentationPeriodMultiplier = settings.PRECISION(); // 10000 (100.00% or 1.0x)
+        globalExperienceMultiplier = settings.PRECISION();         // 10000 (100.00% or 1.0x)
 
         startTime = block.timestamp;
         tradingEnabled = false;
@@ -128,13 +128,13 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         _safeMint(_to, tokenId);
         breweryStats[tokenId] = BreweryStats({
             name: _name,
-            type_: 0,                                                      // Default type is 0
-            tier: 0,                                                       // Default tier is 0 (Tier 1)
-            enabled: true,                                                 // Start earning straight away
+            type_: 0,                                    // Default type is 0
+            tier: 0,                                     // Default tier is 0 (Tier 1)
+            enabled: true,                               // Start earning straight away
             xp: 0,
-            productionRatePerSecondMultiplier: 100 * settings.PRECISION(), // Default to 1.0x production rate
-            fermentationPeriodMultiplier: 100 * settings.PRECISION(),      // Default to 1.0x fermentation period
-            experienceMultiplier: 100 * settings.PRECISION(),              // Default to 1.0x experience
+            productionRatePerSecondMultiplier: 1e4,      // Default to 1.0x production rate
+            fermentationPeriodMultiplier: 1e4,           // Default to 1.0x fermentation period
+            experienceMultiplier: 1e4,                   // Default to 1.0x experience
             totalYield: 0,
             lastTimeClaimed: block.timestamp
         });
@@ -189,44 +189,24 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
      * @notice Calculates the production rate in MEAD for a particular BREWERY NFT
      */
     function getProductionRatePerSecond(uint256 _tokenId) public view returns(uint256) {
-        // The rate of the brewery based on its tier
-        uint256 breweryRate = yields[breweryStats[_tokenId].tier] / 86400;
-
-        // The multiplier to add to it based on its renovations
-        uint256 multiplier = breweryStats[_tokenId].productionRatePerSecondMultiplier / (100 * settings.PRECISION());
-
-        // Control multiplier for periods of extra yield (i.e. double yield weekends), usually remains as 1.0x
-        uint256 global = globalProductionRateMultiplier / (100 * settings.PRECISION());
-
-        // Multipliers are multiplicative and not additive
-        return breweryRate * multiplier;// * global;
+        uint256 dailyYield = yields[breweryStats[_tokenId].tier] * breweryStats[_tokenId].productionRatePerSecondMultiplier * globalProductionRateMultiplier;
+        return (dailyYield / 86400) / (1e4 * 1e4);
     }
 
     /**
      * @notice Calculates the fermentation period in seconds
      */
     function getFermentationPeriod(uint256 _tokenId) public view returns(uint256) {
-
-        // The multiplier (values below 1.0 are good)
-        uint256 multiplier = breweryStats[_tokenId].fermentationPeriodMultiplier / (100 * settings.PRECISION());
-
-        // Control multiplier
-        uint256 global = globalFermentationPeriodMultiplier / (100 * settings.PRECISION());
-
-        return fermentationPeriod * multiplier * global;
+        uint256 totalPeriod = fermentationPeriod * breweryStats[_tokenId].fermentationPeriodMultiplier * globalFermentationPeriodMultiplier;
+        return totalPeriod / (1e4 * 1e4);
     }
 
     /**
      * @notice Calculates how much experience people earn per second
      */
     function getExperiencePerSecond(uint256 _tokenId) public view returns(uint256) {
-        // The multiplier (values above 1.0 are good)
-        uint256 multiplier = breweryStats[_tokenId].experienceMultiplier / (100 * settings.PRECISION());
-
-        // Control variable
-        uint256 global = globalExperienceMultiplier / (100 * settings.PRECISION());
-
-        return experiencePerSecond * multiplier * global;
+        uint256 xpPerSecond = experiencePerSecond * breweryStats[_tokenId].experienceMultiplier * globalExperienceMultiplier;
+        return xpPerSecond / (1e4 * 1e4);
     }
 
     /**
@@ -380,17 +360,17 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
 
         // Handle production rate upgrades
         if (renovation.getType(_renovationId) == renovation.PRODUCTION_RATE()) {
-            breweryStats[_tokenId].productionRatePerSecondMultiplier = renovation.getIntValue(_renovationId) * settings.PRECISION();
+            breweryStats[_tokenId].productionRatePerSecondMultiplier = renovation.getIntValue(_renovationId);
         } 
         
         // Handle fermentation period upgrades
         if (renovation.getType(_renovationId) == renovation.FERMENTATION_PERIOD()) {
-            breweryStats[_tokenId].fermentationPeriodMultiplier = renovation.getIntValue(_renovationId) * settings.PRECISION();
+            breweryStats[_tokenId].fermentationPeriodMultiplier = renovation.getIntValue(_renovationId);
         } 
         
         // Handle experience rate upgrades
         if (renovation.getType(_renovationId) == renovation.EXPERIENCE_BOOST()) {
-            breweryStats[_tokenId].experienceMultiplier = renovation.getIntValue(_renovationId) * settings.PRECISION();
+            breweryStats[_tokenId].experienceMultiplier = renovation.getIntValue(_renovationId);
         } 
         
         // Handle type/skin changes

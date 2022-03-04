@@ -19,7 +19,7 @@ async function main() {
     console.log((await Renovation.balanceOf(deployer.address)).toString());
 
     // 3 is a type change, 4 is the magic type
-    await Renovation.create(deployer.address, "0", "105", "");
+    await Renovation.create(deployer.address, "0", "10500", "");
     console.log("Created a renovation!")
 
     await Brewery.upgrade("1", "1");

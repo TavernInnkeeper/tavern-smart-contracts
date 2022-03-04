@@ -9,8 +9,8 @@ import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoeFactory.sol";
 import "@traderjoe-xyz/core/contracts/traderjoe/interfaces/IJoePair.sol";
 
 contract TavernSettings is Initializable, OwnableUpgradeable {
-    /// @notice Used to give extra precision for percentages
-    uint256 public constant PRECISION = 1e10;
+    /// @notice Used to give 2dp precision for percentages
+    uint256 public constant PRECISION = 1e4;
 
     /// @notice The contract for xMEAD
     address public xmead;
@@ -88,10 +88,10 @@ contract TavernSettings is Initializable, OwnableUpgradeable {
         xMeadCost   = 90 * 10**ERC20Upgradeable(xmead).decimals();
 
         // Default taxes
-        classTaxes.push(18 * PRECISION); // 18%
-        classTaxes.push(16 * PRECISION); // 16%
-        classTaxes.push(14 * PRECISION); // 14%
-        classTaxes.push(12 * PRECISION); // 12%
+        classTaxes.push(1800); // 18%
+        classTaxes.push(1600); // 16%
+        classTaxes.push(1400); // 14%
+        classTaxes.push(1200); // 12%
     }
 
     /**

@@ -2,8 +2,9 @@ import hre, { ethers } from "hardhat";
 import { deployContract, deployProxy } from "../../helper/deployer";
 
 import ERC20 from '../../abis/ERC20.json';
-import { sleep } from "../../helper/utils";
+import { dateString, sleep } from "../../helper/utils";
 import { TRADERJOE_ROUTER_MAINNET, USDC_MAINNET, XMEAD_MAINNET, XMEAD_TESTNET } from "../ADDRESSES";
+import { writeFileSync } from "fs";
 
 async function main() {
     // The signers
@@ -14,7 +15,6 @@ async function main() {
     const usdcAddress         = USDC_MAINNET;
     const tavernsKeep         = deployer.address;
     const initialSupply       = ethers.utils.parseUnits("1000000", 18);    // 1,000,000
-    const dailyYield          = ethers.utils.parseUnits("2", 18);          //         2
     const fermentationPeriod  = (14 * 86400).toString();                   //         14 days in seconds
     const experiencePerSecond = "1";                                       //         2
 
@@ -42,8 +42,8 @@ async function main() {
     // Configure settings
     await settings.setTavernsKeep(deployer.address);
     await settings.setRewardsPool(deployer.address);
-    await settings.setTreasuryFee(ethers.utils.parseUnits("30", 10));
-    await settings.setRewardPoolFee(ethers.utils.parseUnits("70", 10));
+    await settings.setTreasuryFee(ethers.utils.parseUnits("30", 2));
+    await settings.setRewardPoolFee(ethers.utils.parseUnits("70", 2));
     await settings.setTxLimit("5");
     await settings.setWalletLimit("20");
     await settings.setBreweryCost(ethers.utils.parseUnits("100", 18));
@@ -51,21 +51,22 @@ async function main() {
 
     // Dependants:
     //   address _tavernSettings,
-    //   uint256 _baseDailyYield,
-    //   uint256 _baseFermentationPeriod,
-    //   uint256 _baseExperiencePerSecond
-    const Brewery = await deployProxy("Brewery", settings.address, dailyYield, fermentationPeriod, experiencePerSecond);
+    //   uint256 _fermentationPeriod,
+    //   uint256 _experiencePerSecond
+    const Brewery = await deployProxy("Brewery", settings.address, fermentationPeriod, experiencePerSecond);
     console.log("Brewery", Brewery.address);
 
     // Configure brewery
-    await Brewery.setBaseURI("https://ipfs.tavern.money/ipfs/QmaRVcZcZNZaYrCNg3QUbnu55cFSnpKXrGqPRwUJh87z9z")
+    await Brewery.setBaseURI("https://ipfs.tavern.money/ipfs/QmSJDwZxDArzBkZPxPjswj7ZYzx8KUEX1Do9cbnSaSwzm5")
     await Brewery.setTokenURI(0, 0, "/type/0/tier/0.json")
     await Brewery.setTokenURI(0, 1, "/type/0/tier/1.json")
     await Brewery.setTokenURI(0, 2, "/type/0/tier/2.json")
+    await Brewery.setTokenURI(4, 0, "/type/4/tier/0.json")
+    await Brewery.setTokenURI(4, 1, "/type/4/tier/1.json")
+    await Brewery.setTokenURI(4, 2, "/type/4/tier/2.json")
     await Brewery.addTier("0", ethers.utils.parseUnits("2", await Mead.decimals()));
     await Brewery.addTier("50", ethers.utils.parseUnits("3", await Mead.decimals()));
     await Brewery.addTier("100", ethers.utils.parseUnits("4", await Mead.decimals()));
-
 
     // Setup renovation
     const Renovation = await deployProxy("Renovation", Brewery.address);
@@ -75,6 +76,17 @@ async function main() {
     // Mint our first brewery (id: 1)
     await Brewery.mint(deployer.address, "TestNFT!");
     console.log("Minted!")
+
+    // Auto export
+    const file = `// ${dateString(Date.now())}
+export const xMead_address = '${xMead.address}';
+export const Mead_address = '${Mead.address}';
+export const ClassManager_address = '${ClassManager.address}';
+export const settings_address = '${settings.address}';
+export const Brewery_address = '${Brewery.address}';
+export const renovation_address = '${Renovation.address}';`;
+
+    writeFileSync("./scripts/NFT_ADDRESSES.ts", file);
 }
 
 main()

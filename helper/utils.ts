@@ -97,3 +97,13 @@ export async function impersonateForToken(tokenInfo: any, receiver: any, amount:
 export function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+export function dateString(ms) {
+  var currentdate = new Date(ms); 
+  return currentdate.getDate() + "/"
+                  + (currentdate.getMonth()+1)  + "/" 
+                  + currentdate.getFullYear() + " @ "  
+                  + currentdate.getHours() + ":"  
+                  + currentdate.getMinutes() + ":" 
+                  + currentdate.getSeconds();
+}
