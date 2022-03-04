@@ -66,6 +66,13 @@ async function main() {
     await Brewery.addTier("50", ethers.utils.parseUnits("3", await Mead.decimals()));
     await Brewery.addTier("100", ethers.utils.parseUnits("4", await Mead.decimals()));
 
+
+    // Setup renovation
+    const Renovation = await deployProxy("Renovation", Brewery.address);
+    console.log("Renovation: ", Renovation.address);
+    await settings.setRenovationAddress(Renovation.address);
+
+    // Mint our first brewery (id: 1)
     await Brewery.mint(deployer.address, "TestNFT!");
     console.log("Minted!")
 }

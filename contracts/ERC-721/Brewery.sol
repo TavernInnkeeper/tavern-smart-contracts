@@ -59,7 +59,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
     mapping (uint256 => BreweryStats) public breweryStats;
 
     /// @notice A list of tiers (index) and XP values (value)
-    /// @dev tiers.length = max tier
+    /// @dev tiers.length = tier count    and      (tiers.length - 1) = max tier
     uint256[] public tiers;
 
     /// @notice A list of tiers (index) and production rates (value)
@@ -67,14 +67,11 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
     /// @dev yields are in units that factor in the decimals of MEAD
     uint256[] public yields;
 
-    /// @notice The base amount of daily MEAD that each Brewery earns
-    uint256 public baseProductionRatePerSecond;
-
     /// @notice The base fermentation period in seconds
-    uint256 public baseFermentationPeriod;
+    uint256 public fermentationPeriod;
 
     /// @notice The base experience amount awarded for each second past the fermentation period
-    uint256 public baseExperiencePerSecond;
+    uint256 public experiencePerSecond;
 
     /// @notice The control variable to increase production rate globally
     uint256 public globalProductionRateMultiplier;
@@ -100,9 +97,8 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
 
     function initialize(
         address _tavernSettings,
-        uint256 _baseDailyYield,
-        uint256 _baseFermentationPeriod,
-        uint256 _baseExperiencePerSecond
+        uint256 _fermentationPeriod,
+        uint256 _experiencePerSecond
     ) external initializer {
         __ERC721_init(NAME, SYMBOL);
         __ERC721Enumerable_init();
@@ -111,18 +107,17 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
 
-        startTime = block.timestamp;
-        tradingEnabled = false;
-
         settings = TavernSettings(_tavernSettings);
 
-        baseProductionRatePerSecond = _baseDailyYield / 86400;
-        baseFermentationPeriod = _baseFermentationPeriod;
-        baseExperiencePerSecond = _baseExperiencePerSecond;
+        fermentationPeriod = _fermentationPeriod;
+        experiencePerSecond = _experiencePerSecond;
 
         globalProductionRateMultiplier = 100 * settings.PRECISION();
         globalFermentationPeriodMultiplier = 100 * settings.PRECISION();
         globalExperienceMultiplier = 100 * settings.PRECISION();
+
+        startTime = block.timestamp;
+        tradingEnabled = false;
     }
 
     /**
@@ -206,7 +201,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         uint256 global = globalProductionRateMultiplier / (100 * settings.PRECISION());
 
         // Multipliers are multiplicative and not additive
-        return breweryRate * multiplier * global;
+        return breweryRate * multiplier;// * global;
     }
 
     /**
@@ -220,14 +215,20 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
         // Control multiplier
         uint256 global = globalFermentationPeriodMultiplier / (100 * settings.PRECISION());
 
-        return baseFermentationPeriod * multiplier * global;
+        return fermentationPeriod * multiplier * global;
     }
 
     /**
      * @notice Calculates how much experience people earn per second
      */
     function getExperiencePerSecond(uint256 _tokenId) public view returns(uint256) {
-        return baseExperiencePerSecond * breweryStats[_tokenId].experienceMultiplier * globalExperienceMultiplier / (100 * settings.PRECISION() * 100 * settings.PRECISION());
+        // The multiplier (values above 1.0 are good)
+        uint256 multiplier = breweryStats[_tokenId].experienceMultiplier / (100 * settings.PRECISION());
+
+        // Control variable
+        uint256 global = globalExperienceMultiplier / (100 * settings.PRECISION());
+
+        return experiencePerSecond * multiplier * global;
     }
 
     /**
@@ -264,6 +265,14 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
      */
     function getMaxTiers() external view returns(uint256) {
         return tiers.length;
+    }
+
+    function getTiers() external view returns(uint256[] memory) {
+        return tiers;
+    }
+
+    function getYields() external view returns(uint256[] memory) {
+        return yields;
     }
 
     /**
@@ -374,17 +383,17 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
 
         // Handle production rate upgrades
         if (renovation.getType(_renovationId) == renovation.PRODUCTION_RATE()) {
-            breweryStats[_tokenId].productionRatePerSecondMultiplier = renovation.getIntValue(_renovationId);
+            breweryStats[_tokenId].productionRatePerSecondMultiplier = renovation.getIntValue(_renovationId) * settings.PRECISION();
         } 
         
         // Handle fermentation period upgrades
         if (renovation.getType(_renovationId) == renovation.FERMENTATION_PERIOD()) {
-            breweryStats[_tokenId].fermentationPeriodMultiplier = renovation.getIntValue(_renovationId);
+            breweryStats[_tokenId].fermentationPeriodMultiplier = renovation.getIntValue(_renovationId) * settings.PRECISION();
         } 
         
         // Handle experience rate upgrades
         if (renovation.getType(_renovationId) == renovation.EXPERIENCE_BOOST()) {
-            breweryStats[_tokenId].experienceMultiplier = renovation.getIntValue(_renovationId);
+            breweryStats[_tokenId].experienceMultiplier = renovation.getIntValue(_renovationId) * settings.PRECISION();
         } 
         
         // Handle type/skin changes
@@ -472,8 +481,36 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
     /**
      * @notice Gives a certain amount of XP to a BREWERY
      */
-    function giveXP(uint256 _tokenId, uint256 _xp) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addXP(uint256 _tokenId, uint256 _xp) external onlyRole(DEFAULT_ADMIN_ROLE) {
         breweryStats[_tokenId].xp += _xp;
+    }
+
+    /**
+     * @notice Removes XP from a BREWERY
+     */
+    function removeXP(uint256 _tokenId, uint256 _xp) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        breweryStats[_tokenId].xp -= _xp;
+    }
+
+    /**
+     * @notice Sets the name of the BREWERY
+     */
+    function setBreweryName(uint256 _tokenId, string memory _name) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        breweryStats[_tokenId].name = _name;
+    }
+
+    /**
+     * @notice Sets the type of the BREWERY
+     */
+    function setBreweryType(uint256 _tokenId, uint256 _type_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        breweryStats[_tokenId].type_ = _type_;
+    }
+
+    /**
+     * @notice Sets the tier of a BREWERY
+     */
+    function setBreweryTier(uint256 _tokenId, uint256 _tier) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        breweryStats[_tokenId].tier = _tier;
     }
 
     /**
@@ -484,23 +521,65 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
     }
 
     /**
+     * @notice Sets the experience for a BREWERY
+     */
+    function setBreweryXp(uint256 _tokenId, uint256 _xp) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        breweryStats[_tokenId].xp = _xp;
+    }
+
+    /**
+     * @notice Sets the base production rate that all new minted BREWERYs start with
+     */
+    function setBreweryProductionRateMultiplier(uint256 _tokenId, uint256 _value) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        breweryStats[_tokenId].productionRatePerSecondMultiplier = _value;
+    }
+
+    /**
      * @notice Sets the base fermentation period for all BREWERYs
      */
+    function setBreweryFermentationPeriodMultiplier(uint256 _tokenId, uint256 _value) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        breweryStats[_tokenId].fermentationPeriodMultiplier = _value;
+    }
+
+    /**
+     * @notice Sets the experience rate for all BREWERYs
+     */
+    function setBreweryExperienceMultiplier(uint256 _tokenId, uint256 _value) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        breweryStats[_tokenId].experienceMultiplier = _value;
+    }
+
+    /**
+     * @notice Sets the fermentation period for all BREWERYs
+     */
     function setBaseFermentationPeriod(uint256 _baseFermentationPeriod) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        baseFermentationPeriod = _baseFermentationPeriod;
+        fermentationPeriod = _baseFermentationPeriod;
     }
 
     /**
      * @notice Sets the experience rate for all BREWERYs
      */
     function setBaseExperiencePerSecond(uint256 _baseExperiencePerSecond) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        baseExperiencePerSecond = _baseExperiencePerSecond;
+        experiencePerSecond = _baseExperiencePerSecond;
     }
 
     /**
-     * @notice Sets the base production rate that all new minted BREWERYs start with
+     * @notice Sets the production rate multiplier for all new minted BREWERYs start with
      */
-    function setBaseProductionRatePerSecond(uint256 _baseProductionRatePerSecond) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        baseProductionRatePerSecond = _baseProductionRatePerSecond;
+    function setGlobalProductionRatePerSecond(uint256 _value) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        globalProductionRateMultiplier = _value;
+    }
+
+    /**
+     * @notice Sets the fermentation period multiplier for all BREWERYs
+     */
+    function setGlobalFermentationPeriod(uint256 _value) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        globalFermentationPeriodMultiplier = _value;
+    }
+
+    /**
+     * @notice Sets the experience rate multiplier for all BREWERYs
+     */
+    function setGlobalExperiencePerSecond(uint256 _value) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        globalExperienceMultiplier = _value;
     }
 }

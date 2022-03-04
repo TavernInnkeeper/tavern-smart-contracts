@@ -1,5 +1,6 @@
-export const xMead_address = '0xf953b3A269d80e3eB0F2947630Da976B896A8C5b';
-export const Mead_address = '0xAA292E8611aDF267e563f334Ee42320aC96D0463';
-export const ClassManager_address = '0x5c74c94173F05dA1720953407cbb920F3DF9f887';
-export const settings_address = '0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d';
-export const Brewery_address = '0xD0141E899a65C95a556fE2B27e5982A6DE7fDD7A';
+export const xMead_address = '0xeF31027350Be2c7439C1b0BE022d49421488b72C';
+export const Mead_address = '0x12Bcb546bC60fF39F1Adfc7cE4605d5Bd6a6A876';
+export const ClassManager_address = '0xaC47e91215fb80462139756f43438402998E4A3a';
+export const settings_address = '0x9BcC604D4381C5b0Ad12Ff3Bf32bEdE063416BC7';
+export const Brewery_address = '0xe039608E695D21aB11675EBBA00261A0e750526c';
+export const renovation_address = '0xD6b040736e948621c5b6E0a494473c47a6113eA8';

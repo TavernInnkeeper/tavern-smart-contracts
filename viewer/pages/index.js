@@ -3,7 +3,8 @@ import Image from 'next/image'
 import styles from '../styles/Home.module.css'
 
 import { ethers } from "ethers"
-import { NftProvider, useNft } from "use-nft"
+import { FetchWrapper, NftProvider, useNft } from "use-nft"
+import { useEffect, useState } from 'react'
 
 const RPC_URL = "http://127.0.0.1:8545"
 
@@ -12,9 +13,13 @@ const ethersConfig = {
   provider: new ethers.providers.JsonRpcProvider(RPC_URL),
 }
 
+const fetcher = ["ethers", ethersConfig]
+
+const fetchWrapper = new FetchWrapper(fetcher)
+
 export default function Home() {
   return (
-    <NftProvider fetcher={["ethers", ethersConfig]}>
+    <NftProvider fetcher={fetcher}>
       <Nft />
     </NftProvider>
   )
@@ -25,17 +30,24 @@ const myLoader = ({ src, width, quality }) => {
 }
 
 function Nft() {
-  const { loading, error, nft } = useNft(
-    "0xD0141E899a65C95a556fE2B27e5982A6DE7fDD7A",
-    "1"
-  )
 
-  // nft.loading is true during load.
-  if (loading) return <>Loading…</>
+  const [nft, setNft] = useState({"name": "", "description": "", "image": "https://example.com"});
 
-  // nft.error is an Error instance in case of error.
-  if (error || !nft) return <>Error.</>
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchWrapper.fetchNft(
+        "0xe039608E695D21aB11675EBBA00261A0e750526c",
+        "1"
+      ).then(r => {
+        setNft(r);
+        console.log("REsult", r);
+      })
+    }, 500);
 
+    return () => {
+      clearInterval(interval);
+    }
+  })
   // You can now display the NFT metadata.
   return (
     <section>

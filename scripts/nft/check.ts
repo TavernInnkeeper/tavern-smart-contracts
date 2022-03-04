@@ -13,16 +13,22 @@ async function main() {
     console.log("==== GENERAL INFO ====")
     console.log("Contract:", Brewery.address);
     console.log("Total Supply", (await Brewery.totalSupply()).toString());
-    console.log("Base Mead Per Second: ", ethers.utils.formatUnits(await Brewery.baseProductionRatePerSecond(), 18));
-    console.log("Fermentation Period: ", Number(await Brewery.baseFermentationPeriod()) / 86400, "days");
-    console.log("Experience Per Second: ", (await Brewery.baseExperiencePerSecond()).toString());
+    console.log("Fermentation Period: ", Number(await Brewery.fermentationPeriod()) / 86400, "days");
+    console.log("Experience Per Second: ", (await Brewery.experiencePerSecond()).toString());
+    
+    const tiers = await Brewery.getTiers();
+    const yields = await Brewery.getYields();
+    for (let i = 0; i < tiers.length; ++i) {
+        console.log(`Tier ${i+1}:`, `XP ${tiers[i]}`, `Yield ${ethers.utils.formatUnits(yields[i], 18)}`)
+    }
 
     /// SPECIFIC BREWERY INFO
     const id = "1";
     const stats = await Brewery.breweryStats(id);
 
-    console.log("\n\t==== Token", id, "====")
+    console.log("\n==== Token", id, "====")
     console.log("\tName:", stats.name);
+    console.log("\tURI:", await Brewery.tokenURI(id));
     console.log("\tType:", stats.type_.toString());
     console.log("\tCurrent Tier:", stats.tier.toString());
     const xp = (await Brewery.getPendingXp(id)).add(stats.xp);
@@ -36,7 +42,7 @@ async function main() {
                     + currentdate.getMinutes() + ":" 
                     + currentdate.getSeconds();
 
-    console.log("\tProduction Rate:", ethers.utils.formatUnits(await Brewery.yields(stats.tier), 18), "MEAD/day");
+    console.log("\tProduction Rate:", ethers.utils.formatUnits((await Brewery.getProductionRatePerSecond(id)).mul(86400), 18), "MEAD/day");
     console.log("\tPending Rewards:", ethers.utils.formatUnits(await Brewery.pendingMead(id), 18), "MEAD")
     console.log("\tLast Claim:", datetime);
     console.log("\tTotal Claimed:", ethers.utils.formatUnits(stats.totalYield, 18));
