@@ -37,7 +37,7 @@ async function main() {
     //   address _routerAddress
     const taxes = ['1800', '1600', '1400', '1200']; // 18%, 16%, 14%, 12%
     const settings = await deployProxy("TavernSettings", xMead.address, Mead.address, usdcAddress, ClassManager.address, routerAddress, taxes);
-    console.log("settings", settings.address);
+    console.log("Settings", settings.address);
 
     // Configure settings
     await settings.setTavernsKeep(deployer.address);
@@ -76,17 +76,6 @@ async function main() {
     // Mint our first brewery (id: 1)
     await Brewery.mint(deployer.address, "TestNFT!");
     console.log("Minted!")
-
-    // Auto export
-    const file = `// ${dateString(Date.now())}
-export const xMead_address = '${xMead.address}';
-export const Mead_address = '${Mead.address}';
-export const ClassManager_address = '${ClassManager.address}';
-export const settings_address = '${settings.address}';
-export const Brewery_address = '${Brewery.address}';
-export const renovation_address = '${Renovation.address}';`;
-
-    writeFileSync("./scripts/NFT_ADDRESSES.ts", file);
 }
 
 main()

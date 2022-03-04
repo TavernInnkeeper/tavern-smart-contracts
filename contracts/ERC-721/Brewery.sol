@@ -124,7 +124,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
      * @dev The BreweryPurchaseHelper and other helpers will use this function to create BREWERYs
      */
     function mint(address _to, string memory _name) public isRole(MINTER_ROLE) {
-        require(balanceOf(_to) < settings.walletLimit(), "Cant go over limit");
+        require(balanceOf(_to) + 1 <= settings.walletLimit(), "Cant go over limit");
         uint256 tokenId = totalSupply() + 1;
         _safeMint(_to, tokenId);
         breweryStats[tokenId] = BreweryStats({

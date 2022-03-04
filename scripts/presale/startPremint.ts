@@ -1,13 +1,14 @@
 import { ethers } from "hardhat";
+import { PREMINT_FORKED_MAINNET } from "../ADDRESSES";
 import { Brewery_address } from "../NFT_ADDRESSES";
 
 async function main() {
     // The signers
-    const [deployer, alice, bob] = await ethers.getSigners();
+    const [deployer] = await ethers.getSigners();
 
-    const Brewery = await ethers.getContractAt("Brewery", Brewery_address)
-    console.log((await Brewery.totalSupply()).toString());
-    console.log("Suppl!")
+    const Premint = await ethers.getContractAt("Premint", PREMINT_FORKED_MAINNET)
+    await Premint.start();
+    console.log("Started!")
 }
 
 main()

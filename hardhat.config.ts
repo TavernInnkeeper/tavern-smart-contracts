@@ -44,14 +44,15 @@ const config: HardhatUserConfig = {
       }
     ]
   },
-  defaultNetwork: "localhost",
+  defaultNetwork: "hardhat",
   networks: {
     localhost: {
-      url: "http://127.0.0.1:8545",
+      url: "http://127.0.0.1:8545"
     },
     hardhat: {
+      chainId: 1337,
       forking: {
-        url: process.env.AVAX_MAINNET,
+        url: process.env.AVAX_MAINNET
       },
     },
     avaxmainnet: {
