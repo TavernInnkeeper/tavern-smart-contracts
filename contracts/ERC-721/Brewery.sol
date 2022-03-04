@@ -14,8 +14,6 @@ import "./Renovation.sol";
 import "../TavernSettings.sol";
 import "../interfaces/IClassManager.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @notice Brewerys are a custom ERC721 (NFT) that can gain experience and level up. They can also be upgraded.
  */
@@ -125,7 +123,7 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
      * @dev The BreweryPurchaseHelper and other helpers will use this function to create BREWERYs
      */
     function mint(address _to, string memory _name) external isRole(MINTER_ROLE) {
-        require(balanceOf(msg.sender) <= settings.walletLimit(), "Cant go over limit");
+        require(balanceOf(_to) < settings.walletLimit(), "Cant go over limit");
         uint256 tokenId = totalSupply() + 1;
         _safeMint(_to, tokenId);
         breweryStats[tokenId] = BreweryStats({
@@ -237,27 +235,26 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
     function getTier(uint256 _tokenId) public view returns(uint256) {
         require(tiers.length > 0, "Tiers not set!");
         uint256 xp = breweryStats[_tokenId].xp;
-        for(uint256 i = 0; i < tiers.length; ++i) {
+        for(uint256 i = tiers.length - 1; i > 0; i = i - 1) {
             if (xp > tiers[i]) {
-                continue;
+                return i;
             }
-            return i;
         }
-        return tiers.length - 1;
+        return 0;
     }
 
     /**
      * @notice Returns the current yield based on XP
      */
     function getYield(uint256 _tokenId) public view returns(uint256) {
-        return yields[getTier(_tokenId) - 1];
+        return yields[getTier(_tokenId)];
     }
 
     /**
      * @notice Returns the yield based on tier
      */
     function getYieldFromTier(uint256 _tier) public view returns(uint256) {
-        return yields[_tier - 1];
+        return yields[_tier];
     }
 
     /**
@@ -465,8 +462,8 @@ contract Brewery is Initializable, ERC721EnumerableUpgradeable, AccessControlUpg
      */
     function editTier(uint256 _tier, uint256 _xp, uint256 _yield) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(tiers.length >= _tier, "Tier doesnt exist");
-        tiers[_tier - 1] = _xp;
-        yields[_tier - 1] = _yield;
+        tiers[_tier] = _xp;
+        yields[_tier] = _yield;
     }
 
     /**
